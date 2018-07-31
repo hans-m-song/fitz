@@ -1,6 +1,8 @@
 #ifndef FITZ_H
 #define FITZ_H
 
+#define MAX_BUFF 70
+
 typedef enum {
     OK = 0,
     E_ARGS = 1,
@@ -13,5 +15,12 @@ typedef enum {
     E_EOF = 10
 } Err;
 
+typedef struct {
+    FILE *tfile;
+    FILE *sfile;
+    char p1;
+    char p2;
+    int dims[2];
+} Game;
 
 #endif

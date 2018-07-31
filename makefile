@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-std=c99
+FLAGS=-std=c99 -Wall -pedantic
 
 .PHONY: clean all
 
