@@ -11,7 +11,7 @@ void err_msg(Err e) {
             printf("Usage: fitz tilefile [argv[2]type argv[3]type [height width | filename]]\n");
             break;
         case E_TFILE_IO:
-            printf("Can’t access tile file\n");
+            printf("Can't access tile file\n");
             break;
         case E_TFILE_R:
             printf("Invalid tile file contents\n");
@@ -36,26 +36,86 @@ void err_msg(Err e) {
     }
 }
 
-// frees any allocated memory and closes all files
+// frees any allocated memory
 void end_game(Game *g) {
-    fclose(g->tfile);
-    fclose(g->sfile);
+    if(g->tiles) {
+        int i;
+        for(i = 0; i < g->numTiles; i++) {
+            free(g->tiles[i]);
+        }
+        free(g->tiles);
+    }
+    if(g->board) {
+        free(g->board);
+    }
+}
+
+// loads save file data into game instance from given file
+int parse_sfile(Game *g, FILE *f) {
+
+    return OK;
+}
+
+// loads tiles into game instance from given file 
+// @todo and prints them
+int parse_tfile(Game *g, FILE *f) {
+    /*g->tiles = malloc(sizeof(*char)*2);
+    int i, temp, tiles;
+    while(1) {
+        for(i = 0; i < TILE_SIZE; i++) {
+            temp = fgetc(f);
+            if(temp == EOF || ((char)temp != ',' && (char)temp !== '!' &&
+                    (char)temp != '\n')) {
+                return E_TFILE_R;
+            }
+
+        }
+    }*/
+
+    return OK;
 }
 
 // takes a file pointer to a tile file and checks for correct formatting
 // @todo save metadata in given struct?
 // returns an error code
-int check_tfile(FILE *tfile) {
-    Err e = OK;
-    // e = E_TFILE_R;
-    // fclose(tfile);
+int check_file(Game *g, char type, char *filename) {
+    FILE *f = fopen(filename, "r"); // check tilefile
+    if(!f) {
+        return E_TFILE_IO;
+    }
+    #ifdef TEST
+        printf("received %c file %s\n", type, filename);
+    #endif
+
+    Err e = OK; 
+    switch(type) {
+        case 's':
+            e = parse_sfile(g, f);
+            break;
+        case 't':
+            e = parse_tfile(g, f);
+            break;
+        default:
+            break;
+    }
+    
+    fclose(f);
     return e;
 }
 
-// takes a file pointer to a save file and checks for correct formatting
-// returns an error code
-int check_sfile(FILE *sfile) {
-    return 0;
+// checks player types
+int check_players(Game *g, char *p1type, char *p2type) {
+    if((strcmp(p1type, "h") != 0 && strcmp(p2type, "1") != 0 && 
+            strcmp(p1type, "2") != 0) || (strcmp(p2type, "h") != 0 && 
+            strcmp(p2type, "1") != 0 && strcmp(p2type, "2") != 0)) {
+        return E_PLAYER;
+    }
+    g->p1type = p1type[0];
+    g->p2type = p2type[0];
+    #ifdef TEST
+        printf("p1: %c, p2: %c\n", g->p1type, g->p2type);
+    #endif
+    return OK;
 }
 
 int main(int argc, char **argv) {
@@ -66,36 +126,34 @@ int main(int argc, char **argv) {
         err_msg(e);
         return e;
     }
-    
-    g.tfile = fopen(argv[1], "r"); // check tilefile
-    if(!g.tfile) {
-        e = E_TFILE_IO;
-        err_msg(e);
-        return e;
-    }
-    e = check_tfile(g.tfile);
+    #ifdef TEST
+        printf("received %d args\n", argc);
+    #endif
+    e = check_file(&g, 't', argv[1]); // check tile file
     if(e) {
         err_msg(e);
         return e;
     }
     
-    if(argc != 2) {
-        // checks player types
-        if((strcmp(argv[2], "h") != 0 && strcmp(argv[2], "1") != 0 && 
-                strcmp(argv[2], "2") != 0) || (strcmp(argv[3], "h") != 0 && 
-                strcmp(argv[3], "1") != 0 && strcmp(argv[3], "2") != 0)) {
-            e = E_PLAYER;
+    if(argc == 2) {
+        // print tiles
+    } else {
+        e = check_players(&g, argv[2], argv[3]); // check player types
+        if(e) {
             err_msg(e);
             return e;
         }
-        g.p1 = argv[2][0];
-        g.p2 = argv[3][0];
-        
-    } else {
-        g.p1 = 'h';
-        g.p2 = 'h';
+        if(argc == 5) {
+            e = check_file(&g, 's', argv[4]); // load saved game
+            if(e) {
+                err_msg(e);
+                return e;
+            }
+        } else {
+            // initialize new game
+        }
     }
 
-    //end_game(&g);
+    end_game(&g);
     return e;
 }

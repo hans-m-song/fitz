@@ -6,5 +6,8 @@ FLAGS=-std=c99 -Wall -pedantic
 all: fitz.h
 	$(CC) fitz.c -o fitz $(FLAGS)
 
+test: fitz.h
+	$(CC) fitz.c -o fitz $(FLAGS) -DTEST
+
 clean:
 	rm fitz

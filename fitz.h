@@ -2,6 +2,7 @@
 #define FITZ_H
 
 #define MAX_BUFF 70
+#define TILE_SIZE 30
 
 typedef enum {
     OK = 0,
@@ -16,11 +17,13 @@ typedef enum {
 } Err;
 
 typedef struct {
-    FILE *tfile;
-    FILE *sfile;
-    char p1;
-    char p2;
+    char p1type;
+    char p2type;
     int dims[2];
+    int numMoves;
+    int numTiles;
+    char **board;
+    char **tiles;
 } Game;
 
 #endif
