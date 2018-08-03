@@ -6,34 +6,38 @@
 // takes an integer representation of an error code
 // prints the corresponding error code
 void err_msg(Err e) {
+            char *str;
     switch(e) {
         case E_ARGS:
-            printf("Usage: fitz tilefile [argv[2]type argv[3]type [height width | filename]]\n");
+            str = "Usage: fitz tilefile"
+                " [p1type p2type [height width | filename]]";
+            fprintf(stderr, "%s\n", str);
             break;
         case E_TFILE_IO:
-            printf("Can't access tile file\n");
+            fprintf(stderr, "Can't access tile file\n");
             break;
         case E_TFILE_R:
-            printf("Invalid tile file contents\n");
+            fprintf(stderr, "Invalid tile file contents\n");
             break;
         case E_PLAYER:
-            printf("Invalid player type\n");
+            fprintf(stderr, "Invalid player type\n");
             break;
         case E_DIM:
-            printf("Invalid dimensions\n");
+            fprintf(stderr, "Invalid dimensions\n");
             break;
         case E_SFILE_IO:
-            printf("Can't access save file\n");
+            fprintf(stderr, "Can't access save file\n");
             break;
         case E_SFILE_R:
-            printf("Invalid save file contents\n");
+            fprintf(stderr, "Invalid save file contents\n");
             break;
         case E_EOF:
-            printf("End of input\n");
+            fprintf(stderr, "End of input\n");
             break;
         default:
             break;
     }
+    fflush(stderr);
 }
 
 // frees any allocated memory
@@ -84,7 +88,7 @@ int check_file(Game *g, char type, char *filename) {
         return E_TFILE_IO;
     }
     #ifdef TEST
-        printf("received %c file %s\n", type, filename);
+        fprintf(stdout, "received %c file %s\n", type, filename);
     #endif
 
     Err e = OK; 
@@ -113,7 +117,7 @@ int check_players(Game *g, char *p1type, char *p2type) {
     g->p1type = p1type[0];
     g->p2type = p2type[0];
     #ifdef TEST
-        printf("p1: %c, p2: %c\n", g->p1type, g->p2type);
+        fprintf(stdout, "p1: %c, p2: %c\n", g->p1type, g->p2type);
     #endif
     return OK;
 }
@@ -127,7 +131,7 @@ int main(int argc, char **argv) {
         return e;
     }
     #ifdef TEST
-        printf("received %d args\n", argc);
+        fprintf(stdout, "received %d args\n", argc);
     #endif
     e = check_file(&g, 't', argv[1]); // check tile file
     if(e) {
