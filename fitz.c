@@ -10,33 +10,33 @@ void err_msg(Err e) {
     switch(e) {
         case E_ARGS:
             str = "Usage: fitz tilefile"
-                " [p1type p2type [height width | filename]]";
-            fprintf(stderr, "%s\n", str);
+                  " [p1type p2type [height width | filename]]\n";
             break;
         case E_TFILE_IO:
-            fprintf(stderr, "Can't access tile file\n");
+            str = "Can't access tile file\n";
             break;
         case E_TFILE_R:
-            fprintf(stderr, "Invalid tile file contents\n");
+            str = "Invalid tile file contents\n";
             break;
         case E_PLAYER:
-            fprintf(stderr, "Invalid player type\n");
+            str = "Invalid player type\n";
             break;
         case E_DIM:
-            fprintf(stderr, "Invalid dimensions\n");
+            str = "Invalid dimensions\n";
             break;
         case E_SFILE_IO:
-            fprintf(stderr, "Can't access save file\n");
+            str = "Can't access save file\n";
             break;
         case E_SFILE_R:
-            fprintf(stderr, "Invalid save file contents\n");
+            str = "Invalid save file contents\n";
             break;
         case E_EOF:
-            fprintf(stderr, "End of input\n");
+            str = "End of input\n";
             break;
         default:
             break;
     }
+    fprintf(stderr, str);
     fflush(stderr);
 }
 
@@ -107,17 +107,32 @@ int check_file(Game *g, char type, char *filename) {
     return e;
 }
 
-// checks player types
-int check_players(Game *g, char *p1type, char *p2type) {
-    if((strcmp(p1type, "h") != 0 && strcmp(p2type, "1") != 0 && 
-            strcmp(p1type, "2") != 0) || (strcmp(p2type, "h") != 0 && 
-            strcmp(p2type, "1") != 0 && strcmp(p2type, "2") != 0)) {
+// checks player type of given string
+// returns an error code
+int check_player(char *ptype) {
+    if(strlen(ptype) != 1 ||
+            (ptype[0] != '1' && ptype[0] != '2' && ptype[0] != 'h')) {
         return E_PLAYER;
     }
-    g->p1type = p1type[0];
-    g->p2type = p2type[0];
     #ifdef TEST
-        fprintf(stdout, "p1: %c, p2: %c\n", g->p1type, g->p2type);
+        fprintf(stdout, "received players:%c,%c\n", g->p1type, g->p2type);
+    #endif
+    return OK;
+}
+
+// checks dimensions of given strings and saves them to given game instance
+// returns an error code
+int check_dims(Game *g, char *row, char *col) {
+    char *temp;
+    long int x = strtol(row, &temp, 10);
+    long int y = strtol(col, &temp, 10);
+    if(!x || !y || (x < 1 || x > 999) || (y < 1 || y > 999)) {
+        return E_DIM;
+    }
+    g->dims[0] = (int)x;
+    g->dims[1] = (int)y;
+    #ifdef TEST
+        fprintf(stdout, "received dimensions:%d,%d\n", g->dims[0], g->dims[1]);
     #endif
     return OK;
 }
@@ -141,12 +156,16 @@ int main(int argc, char **argv) {
     
     if(argc == 2) {
         // print tiles
+        return e;
     } else {
-        e = check_players(&g, argv[2], argv[3]); // check player types
-        if(e) {
+        if(check_player(argv[2]) || check_player(argv[3])) {
+            e = E_PLAYER;
             err_msg(e);
             return e;
         }
+        g.p1type = argv[2][0];
+        g.p2type = argv[3][0];
+
         if(argc == 5) {
             e = check_file(&g, 's', argv[4]); // load saved game
             if(e) {
@@ -154,10 +173,14 @@ int main(int argc, char **argv) {
                 return e;
             }
         } else {
-            // initialize new game
+            e = check_dims(&g, argv[4], argv[5]);
+            if(e) {
+                err_msg(e);
+                return e;
+            }
         }
     }
 
-    end_game(&g);
+    // end_game(&g);
     return e;
 }
