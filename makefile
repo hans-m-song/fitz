@@ -1,13 +1,16 @@
-CC=gcc
-FLAGS=-std=c99 -Wall -pedantic
+CC = gcc
+FLAGS = -std=c99 -Wall -pedantic
+OBJ = lib.o
 
-.PHONY: clean all
+all: fitz
 
-all: fitz.h
-	$(CC) fitz.c -o fitz $(FLAGS)
+fitz: $(OBJ) fitz.o
+	$(CC) $(FLAGS) $(OBJ) fitz.c -o fitz 
 
-test: fitz.h
-	$(CC) fitz.c -o fitz $(FLAGS) -DTEST
+test: all -DTEST
+
+%.o: %.c
+	$(CC) -c -o $@ $<
 
 clean:
-	rm fitz
+	rm -f fitz *.o
