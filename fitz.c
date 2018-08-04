@@ -42,12 +42,8 @@ void err_msg(Err e) {
 
 // frees any allocated memory
 void end_game(Game *g) {
-    if(g->tiles) {
-        int i;
-        for(i = 0; i < g->numTiles; i++) {
-            free(g->tiles[i]);
-        }
-        free(g->tiles);
+    if(g->tiles.data) {
+        free(g->tiles.data);
     }
     if(g->board) {
         free(g->board);
@@ -55,40 +51,95 @@ void end_game(Game *g) {
 }
 
 // loads save file data into game instance from given file
+// returns an error code
 int parse_sfile(Game *g, FILE *f) {
+    char *str = malloc(sizeof(char) * MAX_BUFFER);
+    str = fgets(str, MAX_BUFFER, f); // load game details
+    if(!str) {
+        return E_SFILE_R;
+    }
+    int output, numMoves, nextPlayer, row, col; // parse details
+    output = sscanf(str, "%d %d %d %d", &numMoves, &nextPlayer, &row, &col);
+    if(output != 4) {
+        return E_SFILE_R;
+    }
+    g->numMoves = numMoves;
+    g->nextPlayer = nextPlayer;
+    g->dims[0] = row;
+    g->dims[1] = col;
+    #ifdef TEST
+        fprintf(stdout, "got moves:%d player:%d row:%d col:%d\n", 
+                numMoves, nextPlayer, row, col);
+    #endif
 
+    int i; // load saved board state
+    for(i = 0; i < g->dims[0]; i++) {
+        str = fgets(str, g->dims[1]+2, f);
+        #ifdef TEST
+            fprintf(stdout, "got str: %s\n", str);
+        #endif
+        if(!str || strlen(str) != g->dims[1]) {
+            return E_SFILE_R;
+        }
+    }
     return OK;
 }
 
 // loads tiles into game instance from given file 
 // @todo and prints them
 int parse_tfile(Game *g, FILE *f) {
-    /*g->tiles = malloc(sizeof(*char)*2);
-    int i, temp, tiles;
+    g->tiles.depth = 1;
+    g->tiles.data = malloc(sizeof(char) * TILE_MAX_ROW * TILE_MAX_COL);
+    int i;
+    char *str = malloc(sizeof(char) * TILE_MAX_ROW + 2);
     while(1) {
-        for(i = 0; i < TILE_SIZE; i++) {
-            temp = fgetc(f);
-            if(temp == EOF || ((char)temp != ',' && (char)temp !== '!' &&
-                    (char)temp != '\n')) {
+        for(i = 0; i < TILE_MAX_ROW + 1; i++) {
+            if(!fgets(str, TILE_MAX_COL + 1, f)) { // get next line
+                if (i < TILE_MAX_ROW) { // check if EOF is valid
+                    return E_TFILE_R;
+                } else {
+                    // end condition
+                    #ifdef TEST
+                        fprintf(stdout, "got %d tiles\n", g->tiles.depth);
+                    #endif 
+                    return OK;
+                }
+            }
+            #ifdef TEST
+                fprintf(stdout, "got str: %s\n", str); 
+            #endif
+            char valid_chars[] = ",!";
+            if(strlen(str) == TILE_MAX_ROW && 
+                    strspn(str, valid_chars) == TILE_MAX_ROW) {
+                fgetc(f); //consume trailing newline
+                // save line
+            } else if(i == 5 && strlen(str) == 1 && str[0] == '\n') {
+                g->tiles.depth++; // increase memory of tiles for next tile
+                g->tiles.data = realloc(g->tiles.data, sizeof(char) \
+                        *  TILE_MAX_ROW * TILE_MAX_COL * g->tiles.depth);
+                break;
+            } else {
                 return E_TFILE_R;
             }
-
         }
-    }*/
-
+    }
     return OK;
 }
 
-// takes a file pointer to a tile file and checks for correct formatting
-// @todo save metadata in given struct?
+// takes a file pointer to a file and game struct
+// passes file to related function to check for correct formatting
 // returns an error code
 int check_file(Game *g, char type, char *filename) {
     FILE *f = fopen(filename, "r"); // check tilefile
     if(!f) {
-        return E_TFILE_IO;
+        if(type == 't') {
+            return E_TFILE_IO;
+        } else {
+            return E_SFILE_IO;
+        }
     }
     #ifdef TEST
-        fprintf(stdout, "received %c file %s\n", type, filename);
+        fprintf(stdout, "got %c file %s\n", type, filename);
     #endif
 
     Err e = OK; 
@@ -110,12 +161,12 @@ int check_file(Game *g, char type, char *filename) {
 // checks player type of given string
 // returns an error code
 int check_player(char *ptype) {
-    if(strlen(ptype) != 1 ||
-            (ptype[0] != '1' && ptype[0] != '2' && ptype[0] != 'h')) {
+    char valid_chars[] = "12h";
+    if(strlen(ptype) != 1 || strspn(ptype, valid_chars) != 1) {
         return E_PLAYER;
     }
     #ifdef TEST
-        fprintf(stdout, "received players:%c,%c\n", g->p1type, g->p2type);
+        fprintf(stdout, "got player:%c\n", ptype[0]);
     #endif
     return OK;
 }
@@ -132,7 +183,7 @@ int check_dims(Game *g, char *row, char *col) {
     g->dims[0] = (int)x;
     g->dims[1] = (int)y;
     #ifdef TEST
-        fprintf(stdout, "received dimensions:%d,%d\n", g->dims[0], g->dims[1]);
+        fprintf(stdout, "got dimensions:%d,%d\n", g->dims[0], g->dims[1]);
     #endif
     return OK;
 }
@@ -146,7 +197,7 @@ int main(int argc, char **argv) {
         return e;
     }
     #ifdef TEST
-        fprintf(stdout, "received %d args\n", argc);
+        fprintf(stdout, "got %d args\n", argc);
     #endif
     e = check_file(&g, 't', argv[1]); // check tile file
     if(e) {

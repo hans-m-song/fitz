@@ -1,9 +1,11 @@
 #ifndef FITZ_H
 #define FITZ_H
 
-#define MAX_BUFF 70
-#define TILE_SIZE 30
+#define MAX_BUFFER 70
+#define TILE_MAX_ROW 5
+#define TILE_MAX_COL 5
 
+// program error codes
 typedef enum {
     OK = 0,
     E_ARGS = 1,
@@ -16,14 +18,21 @@ typedef enum {
     E_EOF = 10
 } Err;
 
+// artificial 3d array based on a 1d array and some arithmetic
+typedef struct {
+    int depth;
+    char *data;
+} Array3D;
+
+// instance of game
 typedef struct {
     char p1type;
     char p2type;
-    int dims[2];
+    int dims[2]; // stores dimension of game as {row, col}
     int numMoves;
-    int numTiles;
-    char **board;
-    char **tiles;
+    int nextPlayer;
+    char **board; // current instance of the board
+    Array3D tiles; // loaded tiles
 } Game;
 
 #endif
