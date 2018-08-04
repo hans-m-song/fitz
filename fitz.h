@@ -19,8 +19,9 @@ typedef enum {
 } Err;
 
 // artificial 3d array based on a 1d array and some arithmetic
+// only depth is needed as the 2d dimensions are already known
 typedef struct {
-    int depth;
+    int depth; // number of tiles
     char *data;
 } Array3D;
 
