@@ -89,6 +89,7 @@ int parse_sfile(Game *g, FILE *f) {
             free(str);
             return E_SFILE_R;
         } else if(!str && i == g->dims[0]) { // end case
+            free(str);
             break;
         }
         
@@ -119,23 +120,27 @@ int parse_sfile(Game *g, FILE *f) {
 // loads tiles into game instance from given file 
 // @todo and prints them
 int parse_tfile(Game *g, FILE *f) {
-    g->tiles.depth = 1;
-    g->tiles.data = malloc(sizeof(char) * TILE_MAX_ROW * TILE_MAX_COL);
+    g->numTiles = 1;
+    g->tiles = malloc(sizeof(char*));
     
     while(1) {
-        char str[TILE_MAX_ROW + 2];
+        char str[TILE_MAX_COL + 1];
+        g->tiles[g->numTiles - 1] = malloc(sizeof(char) * TILE_MAX_ROW * 
+                TILE_MAX_COL + 1);
         int i;
         for(i = 0; i < TILE_MAX_ROW + 1; i++) {
             if(!fgets(str, TILE_MAX_COL + 1, f)) { // get line and check if EOF
-                if (i < TILE_MAX_ROW) { // check if EOF is valid
+                if (i < TILE_MAX_ROW - 1) { // check if EOF is valid
                     return E_TFILE_R;
-                } else {
-                    // end condition
-                    
+                } else { // end case
                     #ifdef TEST
-                        fprintf(stdout, "got %d tiles\n", g->tiles.depth);
+                        fprintf(stdout, "got %d tiles:\n", g->numTiles); 
+                        int j;
+                        for(j = 0; j < g->numTiles; j++) {
+                            fprintf(stdout, "(%d)%s\n", j, g->tiles[j]);
+                        }
                     #endif 
-
+                    
                     return OK;
                 }
             }
@@ -148,11 +153,12 @@ int parse_tfile(Game *g, FILE *f) {
             if(strlen(str) == TILE_MAX_ROW && 
                     strspn(str, valid_chars) == TILE_MAX_ROW) {
                 fgetc(f); //consume trailing newline
-                // save line
-            } else if(i == 5 && strlen(str) == 1 && str[0] == '\n') {
-                g->tiles.depth++; // increase memory of tiles for next tile
-                g->tiles.data = realloc(g->tiles.data, sizeof(char) \
-                        *  TILE_MAX_ROW * TILE_MAX_COL * g->tiles.depth);
+                memcpy(g->tiles[g->numTiles-1] + (i * TILE_MAX_COL), 
+                        str, TILE_MAX_ROW);
+            } else if(i == TILE_MAX_ROW && strlen(str) == 1 &&
+                    str[0] == '\n') { // check if to expect another tile
+                g->numTiles++;
+                g->tiles = realloc(g->tiles, sizeof(char*) * g->numTiles);
                 break;
             } else {
                 return E_TFILE_R;
@@ -191,8 +197,8 @@ int check_file(Game *g, char type, char *filename) {
         default:
             break;
     }
-    
     fclose(f);
+    
     return e;
 }
 

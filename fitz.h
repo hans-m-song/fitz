@@ -4,6 +4,7 @@
 #define MAX_BUFFER 70
 #define TILE_MAX_ROW 5
 #define TILE_MAX_COL 5
+#define TILE_SIZE 25
 
 // program error codes
 typedef enum {
@@ -18,22 +19,16 @@ typedef enum {
     E_EOF = 10
 } Err;
 
-// artificial 3d array based on a 1d array and some arithmetic
-// only depth is needed as the 2d dimensions are already known
-typedef struct {
-    int depth; // number of tiles
-    char *data;
-} Array3D;
-
 // instance of game
 typedef struct {
     char p1type;
     char p2type;
     int dims[2]; // stores dimension of game as {row, col}
     int numMoves;
+    int numTiles;
     int nextPlayer;
     char *board; // current instance of the board
-    Array3D tiles; // loaded tiles
+    char **tiles; // loaded tiles
 } Game;
 
 #endif

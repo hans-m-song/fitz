@@ -1,11 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "fitz.h"
 #include "lib.h"
 
 void end_game(Game *g) {
-    if(g->tiles.data) {
-        free(g->tiles.data);
+    if(g->numTiles) {
+        int i;
+        for(i = 0; i < g->numTiles; i++) {
+            free(g->tiles[i]);
+        }
+        free(g->tiles);
     }
     if(g->board) {
         free(g->board);
@@ -28,6 +33,9 @@ int init_game(Game *g, int argc, char **argv) {
         e = check_file(g, 's', argv[4]); // load saved game
     } else {
         e = check_dims(g, argv[4], argv[5]);
+        g->board = malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
+        memset(g->board, '.', g->dims[0] * g->dims[1]);
+        g->board[g->dims[0] * g->dims[0]] = '\0';
     }
 
     return e;
@@ -56,6 +64,7 @@ int main(int argc, char **argv) {
     if(argc == 2) {
         // print tiles
         printf("imagine tiles being printed here\n");
+        return e;
     } else {
         e = init_game(&g, argc, argv);
     }
