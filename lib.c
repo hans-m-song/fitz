@@ -71,6 +71,7 @@ int parse_sfile(Game *g, FILE *f) {
     char *meta_data = malloc(sizeof(char) * MAX_BUFFER);
     meta_data = fgets(meta_data, MAX_BUFFER, f); // load game details
     if(!meta_data) {
+        free(meta_data);
         return E_SFILE_R;
     }
 
@@ -94,7 +95,7 @@ int parse_sfile(Game *g, FILE *f) {
         }
         
         char valid_chars[] = "*#.";
-        if(strlen(str) != g->dims[1] ||
+        if(strlen(str) != g->dims[1] || 
                 strspn(str, valid_chars) != g->dims[1]) {
             free(str);
             return E_SFILE_R;
@@ -113,7 +114,6 @@ int parse_sfile(Game *g, FILE *f) {
         fprintf(stdout, "%s\n", g->board);
     #endif
     
-    free(str);
     return OK;
 }
 
@@ -133,11 +133,16 @@ int parse_tfile(Game *g, FILE *f) {
                 if (i < TILE_MAX_ROW - 1) { // check if EOF is valid
                     return E_TFILE_R;
                 } else { // end case
+                    int j;
+                    for(j = 0; j < g->numTiles; j++) {
+                        g->tiles[j][TILE_MAX_ROW * TILE_MAX_COL] = '\0';
+                    }
+
                     #ifdef TEST
                         fprintf(stdout, "got %d tiles:\n", g->numTiles); 
-                        int j;
-                        for(j = 0; j < g->numTiles; j++) {
-                            fprintf(stdout, "(%d)%s\n", j, g->tiles[j]);
+                        int k;
+                        for(k = 0; j < g->numTiles; k++) {
+                            fprintf(stdout, "(%d)%s\n", k, g->tiles[k]);
                         }
                     #endif 
                     

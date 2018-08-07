@@ -70,7 +70,6 @@ int main(int argc, char **argv) {
     }
     if(e) {
         err_msg(e);
-        return e;
     }
 
     // play game
