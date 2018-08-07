@@ -4,7 +4,33 @@
 #include "lib.h"
 
 void end_game(Game *g) {
-    ;
+    if(g->tiles.data) {
+        free(g->tiles.data);
+    }
+    if(g->board) {
+        free(g->board);
+    }
+}
+
+void print_square(char *data, int dims[2]) {
+    printf("square\n");
+}
+
+int init_game(Game *g, int argc, char **argv) {
+    if(check_player(argv[2]) || check_player(argv[3])) {
+        return E_PLAYER;
+    }
+    g->p1type = argv[2][0];
+    g->p2type = argv[3][0];
+
+    Err e = OK;
+    if(argc == 5) {
+        e = check_file(g, 's', argv[4]); // load saved game
+    } else {
+        e = check_dims(g, argv[4], argv[5]);
+    }
+
+    return e;
 }
 
 int main(int argc, char **argv) {
@@ -29,31 +55,16 @@ int main(int argc, char **argv) {
     
     if(argc == 2) {
         // print tiles
-        return e;
+        printf("imagine tiles being printed here\n");
     } else {
-        if(check_player(argv[2]) || check_player(argv[3])) {
-            e = E_PLAYER;
-            err_msg(e);
-            return e;
-        }
-
-        g.p1type = argv[2][0];
-        g.p2type = argv[3][0];
-
-        if(argc == 5) {
-            e = check_file(&g, 's', argv[4]); // load saved game
-            if(e) {
-                err_msg(e);
-                return e;
-            }
-        } else {
-            e = check_dims(&g, argv[4], argv[5]);
-            if(e) {
-                err_msg(e);
-                return e;
-            }
-        }
+        e = init_game(&g, argc, argv);
     }
+    if(e) {
+        err_msg(e);
+        return e;
+    }
+
+    // play game
 
     end_game(&g);
     return e;

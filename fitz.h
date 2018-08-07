@@ -32,7 +32,7 @@ typedef struct {
     int dims[2]; // stores dimension of game as {row, col}
     int numMoves;
     int nextPlayer;
-    char **board; // current instance of the board
+    char *board; // current instance of the board
     Array3D tiles; // loaded tiles
 } Game;
 

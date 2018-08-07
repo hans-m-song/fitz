@@ -1,16 +1,23 @@
 CC = gcc
-FLAGS = -std=c99 -Wall -pedantic
-OBJ = lib.o
+BUILD := test
+flags.test := -DTEST -std=c99 -Wall -pedantic
+flags.release := -std=c99 -Wall -pedantic 
+FLAGS := ${flags.${BUILD}} 
+OBJ = lib.o fitz.o
 
 all: fitz
+	@echo BUILD=${BUILD}
 
-fitz: $(OBJ) fitz.o
-	$(CC) $(FLAGS) $(OBJ) fitz.c -o fitz 
-
-test: all -DTEST
+fitz: $(OBJ)
+	$(CC) $(FLAGS) $(OBJ) -o fitz 
 
 %.o: %.c
-	$(CC) -c -o $@ $<
+	$(CC) $(FLAGS) -c -o $@ $<
+
+debug:
+	valgrind --leak-check=full --track-origins=yes ./fitz tf 1 1 sav
+
+.PHONY: all
 
 clean:
 	rm -f fitz *.o
