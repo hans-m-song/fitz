@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fitz.h"
-#include "lib.h"
+#include "init.h"
 
 // takes an integer representation of an error code
 // prints the corresponding error code to stderr
@@ -141,7 +141,7 @@ int parse_tfile(Game *g, FILE *f) {
                     #ifdef TEST
                         fprintf(stdout, "got %d tiles:\n", g->numTiles); 
                         int k;
-                        for(k = 0; j < g->numTiles; k++) {
+                        for(k = 0; k < g->numTiles; k++) {
                             fprintf(stdout, "(%d)%s\n", k, g->tiles[k]);
                         }
                     #endif 

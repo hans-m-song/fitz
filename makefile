@@ -3,7 +3,7 @@ BUILD := test
 flags.test := -DTEST -std=c99 -Wall -pedantic -g
 flags.release := -std=c99 -Wall -pedantic 
 FLAGS := ${flags.${BUILD}} 
-OBJ = lib.o fitz.o
+OBJ = init.o fitz.o tile.o
 
 all: fitz
 	@echo BUILD=${BUILD}

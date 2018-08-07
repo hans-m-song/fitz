@@ -1,5 +1,5 @@
-#ifndef LIB_H
-#define LIB_H
+#ifndef INIT_H
+#define INIT_H
 
 void err_msg(Err e);
 

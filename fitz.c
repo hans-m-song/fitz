@@ -2,17 +2,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include "fitz.h"
-#include "lib.h"
+#include "init.h"
+#include "tile.h"
 
-void end_game(Game *g) {
-    if(g->numTiles) {
-        int i;
-        for(i = 0; i < g->numTiles; i++) {
-            free(g->tiles[i]);
-        }
-        free(g->tiles);
+void end_game(Game *g, int argc) {
+    int i;
+    for(i = 0; i < g->numTiles; i++) {
+        free(g->tiles[i]);
     }
-    if(g->board) {
+    free(g->tiles);
+    
+    if(argc != 2) {
         free(g->board);
     }
 }
@@ -62,18 +62,16 @@ int main(int argc, char **argv) {
     }
     
     if(argc == 2) {
-        // print tiles
-        printf("imagine tiles being printed here\n");
-        return e;
+        print_all_tiles(g.tiles, g.numTiles);
     } else {
         e = init_game(&g, argc, argv);
-    }
-    if(e) {
-        err_msg(e);
+        if(e) {
+            err_msg(e);
+        }
+        
+        // play game
     }
 
-    // play game
-
-    end_game(&g);
+    end_game(&g, argc);
     return e;
 }
