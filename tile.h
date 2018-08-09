@@ -1,7 +1,7 @@
 #ifndef TILE_H
 #define TILE_H
 
-char* rotate(char *tile);
+//char* rotate(int deg, char *tile);
 
 void print_all_tiles(char **tiles, int numTiles);
 

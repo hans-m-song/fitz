@@ -5,16 +5,17 @@
 #include "init.h"
 #include "tile.h"
 
-void end_game(Game *g, int argc) {
+void clear_tiles(Game *g) {
     int i;
-    for(i = 0; i < g->numTiles; i++) {
+    for(i = 0; i < g->tileCount; i++) {
         free(g->tiles[i]);
     }
     free(g->tiles);
-    
-    if(argc != 2) {
-        free(g->board);
-    }
+}
+
+void end_game(Game *g) {
+    free(g->board);
+    clear_tiles(g);
 }
 
 void print_square(char *data, int dims[2]) {
@@ -32,8 +33,11 @@ int init_game(Game *g, int argc, char **argv) {
     if(argc == 5) {
         e = check_file(g, 's', argv[4]); // load saved game
     } else {
+        g->nextPlayer = 0;
+        g->nextTile = 0;
+        
         e = check_dims(g, argv[4], argv[5]);
-        g->board = malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
+        g->board = (char*)malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
         memset(g->board, '.', g->dims[0] * g->dims[1]);
         g->board[g->dims[0] * g->dims[0]] = '\0';
     }
@@ -62,16 +66,20 @@ int main(int argc, char **argv) {
     }
     
     if(argc == 2) {
-        print_all_tiles(g.tiles, g.numTiles);
+        print_all_tiles(g.tiles, g.tileCount);
+        clear_tiles(&g);
+        return e;
     } else {
         e = init_game(&g, argc, argv);
         if(e) {
             err_msg(e);
+            clear_tiles(&g);
+            return e;
         }
         
         // play game
     }
 
-    end_game(&g, argc);
+    end_game(&g);
     return e;
 }

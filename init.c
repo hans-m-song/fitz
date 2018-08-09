@@ -3,6 +3,7 @@
 #include <string.h>
 #include "fitz.h"
 #include "init.h"
+#include "tile.h"
 
 // takes an integer representation of an error code
 // prints the corresponding error code to stderr
@@ -46,21 +47,22 @@ void err_msg(Err e) {
 // parses the string and stores it in the game instance
 // returns an error code
 int parse_sfile_metadata(Game *g, char *str) {
-    int output, numMoves, nextPlayer, row, col; // parse details
+    int output, nextTile, nextPlayer, row, col; // parse details
     output = sscanf(str, "%d %d %d %d", 
-            &numMoves, &nextPlayer, &row, &col);
-    if(output != 4) {
+            &nextTile, &nextPlayer, &row, &col);
+    if(output != 4 || nextTile > g->tileCount - 1 ||
+            (nextPlayer != 0 && nextPlayer != 1)){
         return E_SFILE_R;
     }
 
-    g->numMoves = numMoves;
+    g->nextTile = nextTile;
     g->nextPlayer = nextPlayer;
     g->dims[0] = row;
     g->dims[1] = col;
 
     #ifdef TEST
         fprintf(stdout, "got moves:%d player:%d row:%d col:%d\n", 
-                numMoves, nextPlayer, row, col);
+                nextTile, nextPlayer, row, col);
     #endif
     
     return OK;
@@ -68,7 +70,7 @@ int parse_sfile_metadata(Game *g, char *str) {
 // loads save file data into game instance from given file
 // returns an error code
 int parse_sfile(Game *g, FILE *f) {
-    char *meta_data = malloc(sizeof(char) * MAX_BUFFER);
+    char *meta_data = (char*)malloc(sizeof(char) * MAX_BUFFER);
     meta_data = fgets(meta_data, MAX_BUFFER, f); // load game details
     if(!meta_data) {
         free(meta_data);
@@ -81,15 +83,17 @@ int parse_sfile(Game *g, FILE *f) {
     }
     free(meta_data);
     
-    g->board = malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
+    g->board = (char*)malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
     int i; // load saved board state
-    char *str = malloc(sizeof(char) * g->dims[1] + 1);
+    char *str = (char*)malloc(sizeof(char) * g->dims[1] + 1);
     for(i = 0; i < g->dims[0] + 1; i++) {
         str = fgets(str, g->dims[1] + 1, f);
-        if((!str && i < g->dims[0]) || (str && i == g->dims[0])) { // check EOF
+        if(!str && i < g->dims[0]) { // check EOF
+            free(g->board);
             free(str);
             return E_SFILE_R;
-        } else if(!str && i == g->dims[0]) { // end case
+        } else if(i == g->dims[0] && str[0] == '\n') { // end case
+            free(g->board);
             free(str);
             break;
         }
@@ -97,6 +101,7 @@ int parse_sfile(Game *g, FILE *f) {
         char valid_chars[] = "*#.";
         if(strlen(str) != g->dims[1] || 
                 strspn(str, valid_chars) != g->dims[1]) {
+            free(g->board);
             free(str);
             return E_SFILE_R;
         }
@@ -117,59 +122,77 @@ int parse_sfile(Game *g, FILE *f) {
     return OK;
 }
 
+// retrieves 5 lines from the given file stream
+// and saves it in the given array
+// if a newline is aquired returns special value, else returns an error code
+int get_tile(FILE *f, int tileSize, char output[tileSize + 1]) {
+    char str[TILE_MAX_COL + 2];
+    int i;
+    for(i = 0; i < TILE_MAX_ROW; i++) {
+        if(!fgets(str, TILE_MAX_COL + 2, f)) { // get line and check if EOF
+            if(i == 0) { // check if EOF at beginning
+                return E_EOF;
+            }
+            return E_TFILE_R;
+        }
+        
+        if(strcmp(str, "\n") == 0 && i == 0) { // check if valid newline 
+            output[0] = '\0';
+            return UTIL;
+        }
+
+        char valid_chars[] = ",!\n";
+        if(strlen(str) == TILE_MAX_ROW + 1 && 
+                strspn(str, valid_chars) == TILE_MAX_ROW + 1) {
+            str[TILE_MAX_COL] = '\0';
+            memcpy(output + (i * TILE_MAX_COL), 
+                    str, TILE_MAX_ROW);
+        }
+
+        #ifdef TEST
+            fprintf(stdout, "got str: %s\n", str); 
+        #endif
+        
+    }
+    output[tileSize] = '\0';
+
+    return OK;    
+}
+
 // loads tiles into game instance from given file 
 // @todo and prints them
 int parse_tfile(Game *g, FILE *f) {
-    g->numTiles = 1;
-    g->tiles = malloc(sizeof(char*));
+    int tileSize = TILE_MAX_ROW * TILE_MAX_COL;
+    g->tileCount = 0;
+    g->tiles = (char**)malloc(sizeof(char*));
+    g->tiles[g->tileCount] = (char*)malloc(sizeof(char) * tileSize + 1);
+    char output[tileSize + 1]; // get_tile output stored here
     
     while(1) {
-        char str[TILE_MAX_COL + 1];
-        g->tiles[g->numTiles - 1] = malloc(sizeof(char) * TILE_MAX_ROW * 
-                TILE_MAX_COL + 1);
-        int i;
-        for(i = 0; i < TILE_MAX_ROW + 1; i++) {
-            if(!fgets(str, TILE_MAX_COL + 1, f)) { // get line and check if EOF
-                if (i < TILE_MAX_ROW - 1) { // check if EOF is valid
-                    return E_TFILE_R;
-                } else { // end case
-                    int j;
-                    for(j = 0; j < g->numTiles; j++) {
-                        g->tiles[j][TILE_MAX_ROW * TILE_MAX_COL] = '\0';
-                    }
-
-                    #ifdef TEST
-                        fprintf(stdout, "got %d tiles:\n", g->numTiles); 
-                        int k;
-                        for(k = 0; k < g->numTiles; k++) {
-                            fprintf(stdout, "(%d)%s\n", k, g->tiles[k]);
-                        }
-                    #endif 
-                    
-                    return OK;
-                }
-            }
-
+        int e = get_tile(f, tileSize, output);
+        if(e == OK) {
+            strcpy(g->tiles[g->tileCount], output);
+            g->tileCount += 1;
+            
             #ifdef TEST
-                fprintf(stdout, "got str: %s\n", str); 
-            #endif
-
-            char valid_chars[] = ",!";
-            if(strlen(str) == TILE_MAX_ROW && 
-                    strspn(str, valid_chars) == TILE_MAX_ROW) {
-                fgetc(f); //consume trailing newline
-                memcpy(g->tiles[g->numTiles-1] + (i * TILE_MAX_COL), 
-                        str, TILE_MAX_ROW);
-            } else if(i == TILE_MAX_ROW && strlen(str) == 1 &&
-                    str[0] == '\n') { // check if to expect another tile
-                g->numTiles++;
-                g->tiles = realloc(g->tiles, sizeof(char*) * g->numTiles);
-                break;
-            } else {
-                return E_TFILE_R;
-            }
+                fprintf(stdout, "got tile:\n");
+                print_tile(output);
+            #endif 
+        } else if (e == UTIL) { // expect another tile
+            g->tiles = (char**)realloc(g->tiles, sizeof(char*) * 
+                    (g->tileCount + 1));
+            g->tiles[g->tileCount] = (char*)malloc(sizeof(char) * 
+                    tileSize + 1);
+        } else if(e == E_EOF) {
+            return OK;
+        } else {
+            return e;
         }
     }
+    
+    #ifdef TEST
+        fprintf(stdout, "got %d tiles\n", g->tileCount);
+    #endif
 
     return OK;
 }

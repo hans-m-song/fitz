@@ -16,7 +16,8 @@ typedef enum {
     E_DIM = 5,
     E_SFILE_IO = 6,
     E_SFILE_R = 7,
-    E_EOF = 10
+    E_EOF = 10,
+    UTIL = 42
 } Err;
 
 // instance of game
@@ -24,8 +25,8 @@ typedef struct {
     char p1type;
     char p2type;
     int dims[2]; // stores dimension of game as {row, col}
-    int numMoves;
-    int numTiles;
+    int tileCount;
+    int nextTile;
     int nextPlayer;
     char *board; // current instance of the board
     char **tiles; // loaded tiles
