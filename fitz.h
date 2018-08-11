@@ -2,9 +2,6 @@
 #define FITZ_H
 
 #define MAX_BUFFER 70
-#define TILE_MAX_ROW 5
-#define TILE_MAX_COL 5
-#define TILE_SIZE 25
 
 // program error codes
 typedef enum {
@@ -17,19 +14,30 @@ typedef enum {
     E_SFILE_IO = 6,
     E_SFILE_R = 7,
     E_EOF = 10,
-    UTIL = 42
+    UTIL = 42,
+    SAVE = 43,
+    SUCCESS = 44
 } Err;
+
+// instance of a move
+typedef struct {
+    int r;
+    int c;
+    int theta;
+    char file[MAX_BUFFER];
+} Move;
 
 // instance of game
 typedef struct {
-    char p1type;
-    char p2type;
+    char playerType[2];
     int dims[2]; // stores dimension of game as {row, col}
+    Move move[2]; // stores the last valid move of either player
     int tileCount;
     int nextTile;
     int nextPlayer;
-    char *board; // current instance of the board
-    char **tiles; // loaded tiles
+    char* board; // current instance of the board
+    char** tiles; // loaded tiles
 } Game;
+
 
 #endif

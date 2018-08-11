@@ -1,10 +1,14 @@
 #ifndef TILE_H
 #define TILE_H
 
-//char* rotate(int deg, char *tile);
+#define TILE_MAX_ROW 5
+#define TILE_MAX_COL 5
+#define TILE_SIZE 25
 
-void print_all_tiles(char **tiles, int numTiles);
+void print_tile(char* tiles);
 
-void print_tile(char *tiles);
+void rotate(int deg, char* tile, char output[]);
+
+void print_all_tiles(char** tiles, int numTiles);
 
 #endif

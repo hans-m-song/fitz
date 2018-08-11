@@ -1,6 +1,7 @@
 CC = gcc
 BUILD := test
 flags.test := -DTEST -std=c99 -Wall -pedantic -g
+flags.verbose := -DTEST -DVERBOSE -std=c99 -Wall -pedantic -g
 flags.release := -std=c99 -Wall -pedantic 
 FLAGS := ${flags.${BUILD}} 
 OBJ = init.o fitz.o tile.o
@@ -14,11 +15,17 @@ fitz: $(OBJ)
 %.o: %.c
 	$(CC) $(FLAGS) -c -o $@ $<
 
-debugd:
+dim:
 	valgrind --leak-check=full --track-origins=yes ./fitz tf 1 1 5 5
 
-debugs:
+sav:
 	valgrind --leak-check=full --track-origins=yes ./fitz tf 1 1 sav
+
+badsav:
+	valgrind --leak-check=full --track-origins=yes ./fitz tf 1 1 badsav
+
+tf:
+	valgrind --leak-check=full --track-origins=yes ./fitz tf
 
 .PHONY: all
 

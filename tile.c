@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fitz.h"
+#include "tile.h"
 
 //prints the given 1D representation of a tile in 2D
-void print_tile(char *tiles) {
+void print_tile(char* tiles) {
     int i, j;
     for(i = 0; i < TILE_MAX_ROW; i++) {
         for(j = 0; j < TILE_MAX_COL; j++) {
@@ -19,17 +19,37 @@ void print_tile(char *tiles) {
 
 }
 
-// uses the given tile and rotates it by the given degree (1:90, 2:180, 3:270)
-// recurses until tile is rotated to degree
-void rotate(int deg, int tileSize, char *tile, char output[tileSize + 1]) {
+// prints the given 1D representation of the tiles and their rotations
+// side by side
+void print_side_by_side(char* tiles) {
+    int i, j, k;
+    for(i = 0; i < TILE_MAX_ROW; i++) { // for each row
+        for(j = 0; j < 4; j++) { // for each rotation
+            for(k = 0; k < TILE_MAX_COL; k++) { // for each element
+                int index = (j * TILE_SIZE) + (i * TILE_MAX_COL) + k;
+                fprintf(stdout, "%c", tiles[index]);
+            }
+            if(j < 3) {
+                fprintf(stdout, " ");
+            }
+        }
+        fprintf(stdout, "\n");
+    }
+    fflush(stdout);
+}
+
+// uses the given tile and rotates it once 
+// recurses until tile is rotated by the given degree (1:90, 2:180, 3:270)
+void rotate(int deg, char* tile, char output[TILE_SIZE + 1]) {
     if(!deg) {
         return; 
     }
     
-    memset(output, '\0', tileSize + 1);
-    //char *output = malloc(sizeof(char) * TILE_MAX_ROW * TILE_MAX_COL + 1);
+    memset(output, '\0', TILE_SIZE + 1);
     // for each row, rotate 90 degrees and put in corresponding column
-    int i, j; // i:row, j:column where index is (i*row)+column
+    // i:row, j:column where index of source (row_max * row) + column is 
+    // mapped to (j * column_max) + (row_max - i - 1)
+    int i, j; 
     for(i = 0; i < TILE_MAX_ROW; i++) {
         for(j = 0; j < TILE_MAX_COL; j++) {
             int in = i * TILE_MAX_ROW + j;
@@ -38,35 +58,44 @@ void rotate(int deg, int tileSize, char *tile, char output[tileSize + 1]) {
         }
     }
 
-    char temp[tileSize + 1];
+    char temp[TILE_SIZE + 1];
     strcpy(temp, output);
-    rotate(--deg, tileSize, output, temp);
+    rotate(--deg, output, temp);
     strcpy(output, temp);
 }
 
-// prints the tiles and their rotations using the given array of tiles
+// calls rotate on the given array of tiles and stores them for printing
 // saves a 2D array with each element being the tile and their 3 rotations
 // as 1D strings
-void print_all_tiles(char **tiles, int tileCount) {
-    int tileSize = TILE_MAX_ROW * TILE_MAX_COL;
-    char temp[tileSize + 1];
-    memset(temp, '\0', tileSize + 1);
-    return;
-    char **output = (char**)malloc(sizeof(char*) * tileCount);
+void print_all_tiles(char** tiles, int tileCount) {
+    char** output = (char**)malloc(sizeof(char*) * tileCount);
+    char temp[TILE_SIZE + 1]; // buffer to save rotated tile to
+    memset(temp, '\0', TILE_SIZE + 1);
+
     int i;
-    for(i = 0; i < tileCount; i++) {
-        output[i] = (char*)malloc(sizeof(char) * tileSize * 4 + 1); 
+    for(i = 0; i < tileCount; i++) { // retrieve rotated versions of tiles
+        output[i] = (char*)malloc(sizeof(char) * TILE_SIZE * 4 + 1); 
         int k;
-        for(k = 0; k < 4; k++) {
-            memcpy(temp, tiles[i], tileSize);
-            rotate(k, tileSize, tiles[i], temp);
-            #ifdef TEST
+        for(k = 0; k < 4; k++) { // rotate each tile by the 3 angles
+            memcpy(temp, tiles[i], TILE_SIZE);
+            rotate(k, tiles[i], temp);
+            
+            #ifdef VERBOSE 
                 fprintf(stdout, "%d:\n", k * 90);
                 print_tile(temp);
             #endif
-            // memcpy(&output[i] + (k * tileSize), temp, tileSize + 1);
+            
+            memcpy(output[i] + (k * TILE_SIZE), temp, TILE_SIZE);
         }
+        output[i][TILE_SIZE * 4] = '\0';
+    }
 
+    int l;
+    for(l = 0; l < tileCount; l++) {
+        print_side_by_side(output[l]);
+        if(l < tileCount - 1) { // ommit newline seperator on last tile
+            fprintf(stdout, "\n");
+        }
     }
 
     int j;
