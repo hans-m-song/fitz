@@ -1,23 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "fitz.h"
 #include "init.h"
 #include "tile.h"
 
-// frees memory used for tiles in the given game instance
-void clear_tiles(Game* g) {
-    int i;
-    for(i = 0; i <= g->tileCount; i++) {
-        free(g->tiles[i]);
-    }
-    free(g->tiles);
-}
-
 // frees all memory used by the given game instance
 void end_game(Game* g) {
     free(g->board);
-    clear_tiles(g);
+    clear_tiles(g->tiles, g->tileCount);
 }
 
 // prints the 2D representation of the board in the given dimensions for the 
@@ -47,6 +39,12 @@ int save_game(char* fileName, Game* g) {
     return 1;
 }
 
+// checks if there are any parts of the tile that overhang off the board
+// based on the given coordinates
+int check_overhangs(int r, int c, char tile[TILE_SIZE + 1]) {
+    return SUCCESS;
+}
+
 // checks if the given tile fits on the board at the given row, column
 // and rotation
 // returns 1 if valid, otherwise returns 0
@@ -54,35 +52,49 @@ int valid_move(Game* g, int r, int c, int theta) {
     char tile[TILE_SIZE + 1];
     rotate(theta, g->tiles[g->nextTile], tile);
     
-    // check if tile is bigger than board
-    // check if enough space for tile (win condition? seperate function?)
+    //if(check_overhangs(r, c, tile) == FAIL) { // check outside board
+    //    return FAIL;
+    //}
+    
+    int rowMin = r - 2; // find the corners of the tile with respect to board
+    int colMin = c - 2;
+    int rowMax = r + 2;
+    int colMax = c + 2;
 
-    int i, j; // check if any part of tile is out of bounds
-    for(i = 0; i < TILE_MAX_ROW; i++) {
-        for(j = 0; j < TILE_MAX_COL; j++) {
+    int i, j, tileRow, tileCol;
+    for(i = rowMin, tileRow = 0; i < rowMax; i++, tileRow++) {
+        for(j = colMin, tileCol = 0; j < colMax; j++, tileCol++) {
+            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
+                    (i < 0 || i > TILE_MAX_ROW || // check overhangs for tile
+                     j < 0 || j > TILE_MAX_COL)) {
+                return FAIL;
+            }
+            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
+                    g->board[i * g->dims[1] + j] != '.' ) { // check if empty
+                return FAIL;
+            }
         }
     }
-
-    return 1;
+    return SUCCESS;
 }
 
 // type 1 autoplayer, takes the game instance and a move struct containing the
 // previous move, saves its next move to the struct
 // returns 1 if valid move found, otherwise returns 0
 int a1_move(Game* g, Move m) {
-    #ifdef TEST
-        printf("amove type1\n");
-        return SUCCESS;
-    #endif
+#ifdef TEST
+    printf("amove type1\n");
+    return SUCCESS;
+#endif
     return 1;
 }
 
 // type 2 autoplayer, same as a1Move
 int a2_move(Game* g, Move m) {
-    #ifdef TEST
-        printf("amove type2\n");
-        return SUCCESS;
-    #endif
+#ifdef TEST
+    printf("amove type2\n");
+    return SUCCESS;
+#endif
     return 1;
 }
 
@@ -98,26 +110,28 @@ int h_move(Game* g, Move m) {
     char fileName[MAX_BUFFER];
     if(sscanf(str, "%d %d %d\n", &r, &c, &theta) == 3 && strlen(str) == 6) {
         // check move
-        #ifdef TEST
-            fprintf(stdout, "hmove got: %d, %d, %d\n", r, c, theta);
-        #endif
+
         if(valid_move(g, r, c, theta)) {
             m.r = r;
             m.c = c;
             m.theta = theta;
+
+#ifdef TEST
+        fprintf(stdout, "hmove success %d, %d, %d\n", r, c, theta);
+#endif
             return SUCCESS; 
         }
     } else if(sscanf(str, "save%s\n", fileName) == 1) {
         //save
-        #ifdef TEST
-            fprintf(stdout, "hmove saving to: %s\n", fileName);
-        #endif
+#ifdef TEST
+        fprintf(stdout, "hmove saving to: %s\n", fileName);
+#endif
         if(save_game(fileName, g)) {
             return SAVE;
         }
     }
 
-    return OK;
+    return FAIL;
 }
 
 // game runtime instance, plays the game in the given game instance
@@ -130,8 +144,8 @@ int play_game(Game* g) {
         print_board(g->board, g->dims, stdout);
         // check win condition win(board, tile)
         
-        Err e = OK;
-        while(e == OK) { // get player move
+        Err e = FAIL;
+        while(e == FAIL) { // get player move
             if(g->playerType[g->nextPlayer] == 'h') { // get human move
                 print_tile(g->tiles[g->nextTile]);
                 fprintf(stdout, "Player %c] ", pSymbol[g->nextPlayer]);
@@ -145,13 +159,14 @@ int play_game(Game* g) {
                 }
             } 
         
-            if(e == EOF) {
-                return e;
-            }
-
-            // do move
-            // check for save or quit
         }
+        
+        if(e == EOF) {
+            return e;
+        }
+
+        // do move
+        // check for save or quit
 
         // increment player and tile count
         g->nextPlayer += 1;
@@ -207,9 +222,9 @@ int main(int argc, char** argv) {
         return e;
     }
 
-    #ifdef TEST
-        fprintf(stdout, "got %d args\n", argc);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "got %d args\n", argc);
+#endif
 
     e = check_file(&g, 't', argv[1]); // check tile file
     if(e) {
@@ -219,14 +234,14 @@ int main(int argc, char** argv) {
     
     if(argc == 2) {
         print_all_tiles(g.tiles, g.tileCount);
-        clear_tiles(&g);
+        clear_tiles(g.tiles, g.tileCount);
         return e;
     } 
     
     e = init_game(&g, argc, argv);
     if(e) {
         err_msg(e);
-        clear_tiles(&g);
+        clear_tiles(g.tiles, g.tileCount);
         return e;
     }
     

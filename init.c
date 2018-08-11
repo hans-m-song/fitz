@@ -60,10 +60,10 @@ int parse_sfile_metadata(Game* g, char* str) {
     g->dims[0] = row;
     g->dims[1] = col;
 
-    #ifdef TEST
-        fprintf(stdout, "got moves:%d player:%d row:%d col:%d\n", 
-                nextTile, nextPlayer, row, col);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "got moves:%d player:%d row:%d col:%d\n", 
+            nextTile, nextPlayer, row, col);
+#endif
     
     return OK;
 }
@@ -107,18 +107,18 @@ int parse_sfile(Game* g, FILE* f) {
             return E_SFILE_R;
         }
 
-        #ifdef TEST
-            fprintf(stdout, "got str: %s\n", str);
-        #endif
+#ifdef TEST
+        fprintf(stdout, "got str: %s\n", str);
+#endif
         
         fgetc(f); // consume trailing newline
         memcpy(g->board + (i * g->dims[1]), str, g->dims[1]);
     }
     g->board[g->dims[0] * g->dims[1]] = '\0';
 
-    #ifdef TEST
-        fprintf(stdout, "%s\n", g->board);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "%s\n", g->board);
+#endif
     return OK;
 }
 
@@ -151,9 +151,9 @@ int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
             return E_TFILE_R;
         }
 
-        #ifdef VERBOSE
-            fprintf(stdout, "got str: %s\n", str); 
-        #endif
+#ifdef VERBOSE
+        fprintf(stdout, "got str: %s\n", str); 
+#endif
         
     }
     output[TILE_SIZE] = '\0';
@@ -175,19 +175,19 @@ int parse_tfile(Game* g, FILE* f) {
             strcpy(g->tiles[g->tileCount], output);
             g->tileCount += 1;
             
-            #ifdef VERBOSE 
-                fprintf(stdout, "got tile:\n");
-                print_tile(output);
-            #endif 
+#ifdef VERBOSE 
+            fprintf(stdout, "got tile:\n");
+            print_tile(output);
+#endif 
         } else if (e == UTIL) { // expect another tile
             g->tiles = (char**)realloc(g->tiles, sizeof(char*) * 
                     (g->tileCount + 1));
             g->tiles[g->tileCount] = (char*)malloc(sizeof(char) * 
                     TILE_SIZE + 1);
         } else if(e == E_EOF) {
-            #ifdef TEST
-                fprintf(stdout, "got %d tiles\n", g->tileCount);
-            #endif
+#ifdef TEST
+            fprintf(stdout, "got %d tiles\n", g->tileCount);
+#endif
             return OK;
         } else {
             return e;
@@ -210,9 +210,9 @@ int check_file(Game* g, char type, char* filename) {
         }
     }
 
-    #ifdef TEST
-        fprintf(stdout, "got %c file %s\n", type, filename);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "got %c file %s\n", type, filename);
+#endif
 
     Err e = OK; 
     switch(type) {
@@ -238,9 +238,9 @@ int check_player(char* ptype) {
         return E_PLAYER;
     }
 
-    #ifdef TEST
-        fprintf(stdout, "got player:%c\n", ptype[0]);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "got player:%c\n", ptype[0]);
+#endif
 
     return OK;
 }
@@ -259,9 +259,9 @@ int check_dims(Game* g, char* row, char* col) {
     g->dims[0] = (int)x;
     g->dims[1] = (int)y;
 
-    #ifdef TEST
-        fprintf(stdout, "got dimensions:%d,%d\n", g->dims[0], g->dims[1]);
-    #endif
+#ifdef TEST
+    fprintf(stdout, "got dimensions:%d,%d\n", g->dims[0], g->dims[1]);
+#endif
 
     return OK;
 }

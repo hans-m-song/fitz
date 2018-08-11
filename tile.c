@@ -3,6 +3,15 @@
 #include <string.h>
 #include "tile.h"
 
+// frees memory used for tiles in the given game instance
+void clear_tiles(char** tiles, int tileCount) {
+    int i;
+    for(i = 0; i <= tileCount; i++) {
+        free(tiles[i]);
+    }
+    free(tiles);
+}
+
 //prints the given 1D representation of a tile in 2D
 void print_tile(char* tiles) {
     int i, j;
@@ -13,9 +22,9 @@ void print_tile(char* tiles) {
         fprintf(stdout, "\n");
     }
 
-    #ifdef TEST
-        fprintf(stdout, "\n");
-    #endif
+#ifdef TEST
+    fprintf(stdout, "\n");
+#endif
 
 }
 
@@ -80,10 +89,10 @@ void print_all_tiles(char** tiles, int tileCount) {
             memcpy(temp, tiles[i], TILE_SIZE);
             rotate(k, tiles[i], temp);
             
-            #ifdef VERBOSE 
-                fprintf(stdout, "%d:\n", k * 90);
-                print_tile(temp);
-            #endif
+#ifdef VERBOSE 
+            fprintf(stdout, "%d:\n", k * 90);
+            print_tile(temp);
+#endif
             
             memcpy(output[i] + (k * TILE_SIZE), temp, TILE_SIZE);
         }

@@ -16,7 +16,8 @@ typedef enum {
     E_EOF = 10,
     UTIL = 42,
     SAVE = 43,
-    SUCCESS = 44
+    SUCCESS = 44,
+    FAIL = 45
 } Err;
 
 // instance of a move
