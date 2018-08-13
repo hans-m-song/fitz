@@ -268,15 +268,3 @@ int check_dims(Game* g, char* row, char* col) {
     return OK;
 }
 
-// sets up initial moves based on the given player type
-void init_move(Move m, char ptype) {
-    if(ptype == '1') {
-        m.r = -2;
-        m.c = -2;
-    } else {
-        m.r = 0;
-        m.c = 0;
-    }
-    m.theta = 0;
-}
-

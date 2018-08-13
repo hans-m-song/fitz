@@ -42,5 +42,6 @@ typedef struct {
     char** tiles; // loaded tiles
 } Game;
 
+void print_board(char* board, int dims[2], FILE* f);
 
 #endif
