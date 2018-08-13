@@ -32,7 +32,7 @@ typedef struct {
 typedef struct {
     char playerType[2];
     int dims[2]; // stores dimension of game as {row, col}
-    Move move[2]; // stores the last valid move of either player
+    Move moves[2]; // stores the last valid move of either player
     int tileCount;
     int nextTile;
     int nextPlayer;

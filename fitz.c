@@ -18,10 +18,11 @@ void print_board(char* board, int dims[2], FILE* f) {
     int i, j;
     for(i = 0; i < dims[0]; i++) {
         for (j = 0; j < dims[1]; j++) {
-            fprintf(f, "%c", board[(i * dims[0]) + j]);
+            fprintf(f, "%c", board[(i * dims[1]) + j]);
         }
         fprintf(f, "\n");
     }
+    fflush(f);
 }
 
 // saves game instance to the given file
@@ -29,48 +30,64 @@ void print_board(char* board, int dims[2], FILE* f) {
 int save_game(char* fileName, Game* g) {
     FILE* f = fopen(fileName, "w");
     if(!f) {
-        return 0;
+        return FAIL;
     }
 
     fprintf(f, "%d %d %d %d\n", g->nextTile, g->nextPlayer, g->dims[0], 
             g->dims[1]);
     print_board(g->board, g->dims, f);
     fflush(f);
-    return 1;
+    fclose(f);
+    return SUCCESS;
 }
 
-// checks if there are any parts of the tile that overhang off the board
-// based on the given coordinates
-int check_overhangs(int r, int c, char tile[TILE_SIZE + 1]) {
-    return SUCCESS;
+// takes the board and applys the tile with the given move
+// assumes move is valid
+void do_move(Game* g, char pSymbol) {
+    int rowMin = g->moves[g->nextPlayer].r - 2; // get corner of tile with
+    int colMin = g->moves[g->nextPlayer].c - 2; // respect to board
+
+    char tile[TILE_SIZE + 1]; // get rotated tile
+    rotate(g->moves[g->nextPlayer].theta, g->tiles[g->nextTile], tile); 
+
+    int i, j, tileRow, tileCol; // iterate board and tile simultaneously
+    for(i = rowMin, tileRow = 0; tileRow < TILE_MAX_ROW; i++, tileRow++) {
+        for(j = colMin, tileCol = 0; tileCol < TILE_MAX_COL; j++, tileCol++) {
+            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!') {
+#ifdef TEST
+                printf("%d, %d\n", i, j);
+#endif
+                g->board[i * g->dims[1] + j] = pSymbol;
+            }
+        }
+    }
 }
 
 // checks if the given tile fits on the board at the given row, column
 // and rotation
 // returns 1 if valid, otherwise returns 0
 int valid_move(Game* g, int r, int c, int theta) {
+    if(r < -2 || r > g->dims[0] + 2 || c < -2 || c > g->dims[1] + 3 || 
+            theta % 90 != 0 || theta < 0 || theta > 270) {
+        return FAIL;
+    }
+
     char tile[TILE_SIZE + 1];
-    rotate(theta, g->tiles[g->nextTile], tile);
+    rotate(theta / 90, g->tiles[g->nextTile], tile);
     
-    //if(check_overhangs(r, c, tile) == FAIL) { // check outside board
-    //    return FAIL;
-    //}
-    
-    int rowMin = r - 2; // find the corners of the tile with respect to board
+    int rowMin = r - 2; // find the corner of the tile with respect to board
     int colMin = c - 2;
-    int rowMax = r + 2;
-    int colMax = c + 2;
 
     int i, j, tileRow, tileCol;
-    for(i = rowMin, tileRow = 0; i < rowMax; i++, tileRow++) {
-        for(j = colMin, tileCol = 0; j < colMax; j++, tileCol++) {
+    for(i = rowMin, tileRow = 0; tileRow < TILE_MAX_COL; i++, tileRow++) {
+        for(j = colMin, tileCol = 0; tileCol < TILE_MAX_COL; j++, tileCol++) {
             if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
-                    (i < 0 || i > TILE_MAX_ROW || // check overhangs for tile
-                     j < 0 || j > TILE_MAX_COL)) {
+                    (i < 0 || i > g->dims[0] || // check overhangs
+                    j < 0 || j > g->dims[1])) {
                 return FAIL;
             }
-            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
-                    g->board[i * g->dims[1] + j] != '.' ) { // check if empty
+            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && // check empty
+                    g->board[i * g->dims[1] + j] != '.') {
                 return FAIL;
             }
         }
@@ -81,57 +98,61 @@ int valid_move(Game* g, int r, int c, int theta) {
 // type 1 autoplayer, takes the game instance and a move struct containing the
 // previous move, saves its next move to the struct
 // returns 1 if valid move found, otherwise returns 0
-int a1_move(Game* g, Move m) {
+int a1_move(Game* g) {
 #ifdef TEST
     printf("amove type1\n");
     return SUCCESS;
 #endif
-    return 1;
+    return FAIL;
 }
 
 // type 2 autoplayer, same as a1Move
-int a2_move(Game* g, Move m) {
+int a2_move(Game* g) {
 #ifdef TEST
     printf("amove type2\n");
     return SUCCESS;
 #endif
-    return 1;
+    return FAIL;
 }
 
-// human move, retrieves and parses user input
-// returns a special code on save or valid move or an error code otherwise
-int h_move(Game* g, Move m) {
-    char str[MAX_BUFFER + 1];
-    if(!fgets(str, MAX_BUFFER + 1, stdin)) {
-        return E_EOF;
-    }
-
-    int r, c, theta;
-    char fileName[MAX_BUFFER];
-    if(sscanf(str, "%d %d %d\n", &r, &c, &theta) == 3 && strlen(str) == 6) {
-        // check move
-
-        if(valid_move(g, r, c, theta)) {
-            m.r = r;
-            m.c = c;
-            m.theta = theta;
+// human move, retrieves and parses user input and saves it in the given move
+// returns an error code describing the input
+int h_move(Game* g, Move* m) {
+    char* str = (char*)malloc(sizeof(char) * MAX_BUFFER + 1);
+    Err e = E_EOF;
+    
+    while(fgets(str, MAX_BUFFER, stdin) != NULL) {
+        int r, c, theta;
+        char fileName[MAX_BUFFER];
+        if(sscanf(str, "%d %d %d\n", &r, &c, &theta) == 3) {
+            if(valid_move(g, r, c, theta) == SUCCESS) {
+                m->r = r;
+                m->c = c;
+                m->theta = theta / 90;
 
 #ifdef TEST
-        fprintf(stdout, "hmove success %d, %d, %d\n", r, c, theta);
+                fprintf(stdout, "hmove success %d, %d, %d\n", r, c, theta);
 #endif
-            return SUCCESS; 
-        }
-    } else if(sscanf(str, "save%s\n", fileName) == 1) {
-        //save
+                e = SUCCESS;
+                break;
+            } else {
+                e = FAIL;
+                break;
+            }
+        } else if(sscanf(str, "save%s\n", fileName) == 1) {
+            //save
 #ifdef TEST
-        fprintf(stdout, "hmove saving to: %s\n", fileName);
+            fprintf(stdout, "hmove saving to: %s\n", fileName);
 #endif
-        if(save_game(fileName, g)) {
-            return SAVE;
+            if(save_game(fileName, g) == SUCCESS) {
+                e = SAVE;
+                break;
+            }
         }
-    }
-
-    return FAIL;
+        break;
+    } 
+    free(str);
+    return e;
 }
 
 // game runtime instance, plays the game in the given game instance
@@ -139,41 +160,41 @@ int h_move(Game* g, Move m) {
 int play_game(Game* g) {
     char pSymbol[] = {'*', '#'};
 
-    int i = 0;
-    while(i < 4) { // TODO change this later
+    while(1) { // TODO change this later while(!win_condition(g)) {
         print_board(g->board, g->dims, stdout);
         // check win condition win(board, tile)
-        
+
         Err e = FAIL;
-        while(e == FAIL) { // get player move
-            if(g->playerType[g->nextPlayer] == 'h') { // get human move
-                print_tile(g->tiles[g->nextTile]);
+        if(g->playerType[g->nextPlayer] == 'h') { // get human move
+            print_tile(g->tiles[g->nextTile]);
+            while(e == FAIL) {
                 fprintf(stdout, "Player %c] ", pSymbol[g->nextPlayer]);
-                e = h_move(g, g->move[g->nextPlayer]);
-            } else { // get autoplayer move
-                fprintf(stdout, "Player %c => ", pSymbol[g->nextPlayer]);
-                if(g->playerType[g->nextPlayer] == '1') {
-                    e = a1_move(g, g->move[g->nextPlayer]);
-                } else {
-                    e = a2_move(g, g->move[g->nextPlayer]);
-                }
-            } 
+                e = h_move(g, &g->moves[g->nextPlayer]);
+            }
+        } else { // get autoplayer move
+            fprintf(stdout, "Player %c => ", pSymbol[g->nextPlayer]);
+            if(g->playerType[g->nextPlayer] == '1') {
+                e = a1_move(g);
+            } else {
+                e = a2_move(g);
+            }
+        } 
         
-        }
-        
-        if(e == EOF) {
+        if(e == E_EOF) { // if user quit
             return e;
         }
 
-        // do move
-        // check for save or quit
+        if(e == SAVE) { // if user requested save
+            break;
+        }
+
+        do_move(g, pSymbol[g->nextPlayer]);
 
         // increment player and tile count
         g->nextPlayer += 1;
         g->nextPlayer %= 2;
         g->nextTile += 1;
         g->nextTile %= g->tileCount;
-        i++;
     }
     return OK;
 }
@@ -203,11 +224,11 @@ int init_game(Game* g, int argc, char** argv) {
         }
         g->board = (char*)malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
         memset(g->board, '.', g->dims[0] * g->dims[1]);
-        g->board[g->dims[0] * g->dims[0]] = '\0';
+        g->board[g->dims[0] * g->dims[1]] = '\0';
     }
     
-    init_move(g->move[0], g->playerType[0]);
-    init_move(g->move[1], g->playerType[1]);
+    init_move(g->moves[0], g->playerType[0]);
+    init_move(g->moves[1], g->playerType[1]);
 
     return e;
 }

@@ -6,26 +6,22 @@
 // frees memory used for tiles in the given game instance
 void clear_tiles(char** tiles, int tileCount) {
     int i;
-    for(i = 0; i <= tileCount; i++) {
+    for(i = 0; i < tileCount; i++) {
         free(tiles[i]);
     }
     free(tiles);
 }
 
 //prints the given 1D representation of a tile in 2D
-void print_tile(char* tiles) {
+void print_tile(char* tile) {
     int i, j;
     for(i = 0; i < TILE_MAX_ROW; i++) {
         for(j = 0; j < TILE_MAX_COL; j++) {
-            fprintf(stdout, "%c", tiles[i * TILE_MAX_COL + j]);
+            fprintf(stdout, "%c", tile[i * TILE_MAX_COL + j]);
         }
         fprintf(stdout, "\n");
     }
-
-#ifdef TEST
-    fprintf(stdout, "\n");
-#endif
-
+    fflush(stdout);
 }
 
 // prints the given 1D representation of the tiles and their rotations
@@ -51,6 +47,7 @@ void print_side_by_side(char* tiles) {
 // recurses until tile is rotated by the given degree (1:90, 2:180, 3:270)
 void rotate(int deg, char* tile, char output[TILE_SIZE + 1]) {
     if(!deg) {
+        memcpy(output, tile, TILE_SIZE + 1);
         return; 
     }
     
