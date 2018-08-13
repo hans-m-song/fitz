@@ -16,8 +16,9 @@ typedef enum {
     E_EOF = 10,
     UTIL = 42,
     SAVE = 43,
-    SUCCESS = 44,
-    FAIL = 45
+    SAVE_FAIL = 44,
+    SUCCESS = 45,
+    FAIL = 46
 } Err;
 
 // instance of a move
@@ -34,6 +35,7 @@ typedef struct {
     int dims[2]; // stores dimension of game as {row, col}
     Move moves[2]; // stores the last valid move of either player
     int tileCount;
+    int moveCount;
     int nextTile;
     int nextPlayer;
     char* board; // current instance of the board

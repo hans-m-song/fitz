@@ -99,6 +99,32 @@ int valid_move(Game* g, int r, int c, int theta) {
 // previous move, saves its next move to the struct
 // returns 1 if valid move found, otherwise returns 0
 int a1_move(Game* g) {
+    int r, c, theta;
+    if(g->moveCount == 0) {
+        r = -2;
+        c = -2;
+        theta = 0;
+    }
+
+    Err e = FAIL;
+    while(e == FAIL) {
+        e = valid_move(g, r, c, theta);
+        if(e == SUCCESS) {
+            g->moves[g->nextPlayer].r = r;
+            g->moves[g->nextPlayer].c = c;
+            g->moves[g->nextPlayer].theta = theta;
+        }
+        c += 1;
+        if(c > g->dims[1] + 2) {
+            c = -2;
+            r += 1;
+        }
+        if(c > g->dims[0] + 2) {
+            r = -2;
+        }
+    }
+
+
 #ifdef TEST
     printf("amove type1\n");
     return SUCCESS;
@@ -119,38 +145,37 @@ int a2_move(Game* g) {
 // returns an error code describing the input
 int h_move(Game* g, Move* m) {
     char* str = (char*)malloc(sizeof(char) * MAX_BUFFER + 1);
-    Err e = E_EOF;
     
-    while(fgets(str, MAX_BUFFER, stdin) != NULL) {
-        int r, c, theta;
-        char fileName[MAX_BUFFER];
-        if(sscanf(str, "%d %d %d\n", &r, &c, &theta) == 3) {
-            if(valid_move(g, r, c, theta) == SUCCESS) {
-                m->r = r;
-                m->c = c;
-                m->theta = theta / 90;
+    str = fgets(str, MAX_BUFFER, stdin);
+    if(str == NULL) {
+        free(str);
+        return E_EOF;
+    }
+
+    Err e = FAIL;
+    int r, c, theta;
+    char fileName[MAX_BUFFER];
+    if(sscanf(str, "%d %d %d", &r, &c, &theta) == 3) {
+        if(valid_move(g, r, c, theta) == SUCCESS) {
+            m->r = r;
+            m->c = c;
+            m->theta = theta / 90;
+
+            e = SUCCESS;
 
 #ifdef TEST
-                fprintf(stdout, "hmove success %d, %d, %d\n", r, c, theta);
+            fprintf(stdout, "hmove success %d, %d, %d\n", r, c, theta);
 #endif
-                e = SUCCESS;
-                break;
-            } else {
-                e = FAIL;
-                break;
-            }
-        } else if(sscanf(str, "save%s\n", fileName) == 1) {
-            //save
-#ifdef TEST
-            fprintf(stdout, "hmove saving to: %s\n", fileName);
-#endif
-            if(save_game(fileName, g) == SUCCESS) {
-                e = SAVE;
-                break;
-            }
         }
-        break;
-    } 
+    } else if(sscanf(str, "save%s\n", fileName) == 1) {
+#ifdef TEST
+        fprintf(stdout, "hmove saving to: %s\n", fileName);
+#endif
+        if(save_game(fileName, g) == SUCCESS) {
+            e = SAVE;
+        }
+    }
+
     free(str);
     return e;
 }
@@ -188,13 +213,18 @@ int play_game(Game* g) {
             break;
         }
 
-        do_move(g, pSymbol[g->nextPlayer]);
+        if(e == SAVE_FAIL) {
+            err_msg(e);
+        } else {
+            do_move(g, pSymbol[g->nextPlayer]);
 
-        // increment player and tile count
-        g->nextPlayer += 1;
-        g->nextPlayer %= 2;
-        g->nextTile += 1;
-        g->nextTile %= g->tileCount;
+            // increment player and tile count
+            g->nextPlayer += 1;
+            g->nextPlayer %= 2;
+            g->moveCount += 1;
+            g->nextTile += 1;
+            g->nextTile %= g->tileCount;
+        }
     }
     return OK;
 }
@@ -217,6 +247,7 @@ int init_game(Game* g, int argc, char** argv) {
     } else {
         g->nextPlayer = 0;
         g->nextTile = 0;
+        g->moveCount = 0;
         
         e = check_dims(g, argv[4], argv[5]);
         if(e) {

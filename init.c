@@ -35,6 +35,8 @@ void err_msg(Err e) {
         case E_EOF:
             str = "End of input\n";
             break;
+        case SAVE_FAIL:
+            str = "Unable to save game\n";
         default:
             break;
     }
