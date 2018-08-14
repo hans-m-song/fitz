@@ -87,8 +87,8 @@ int parse_sfile(Game* g, FILE* f) {
     free(metaData);
     
     g->board = (char*)malloc(sizeof(char) * g->dims[0] * g->dims[1] + 1);
-    int i; // load saved board state
     char* str = (char*)malloc(sizeof(char) * g->dims[1] + 1);
+    int i; // load saved board state
     for(i = 0; i < g->dims[0] + 1; i++) {
         str = fgets(str, g->dims[1] + 1, f);
         if(!str && i < g->dims[0]) { // check EOF
@@ -101,7 +101,7 @@ int parse_sfile(Game* g, FILE* f) {
             break;
         }
         
-        char validChars[] = "*#.";
+        char validChars[] = "*#."; // check for invalid line
         if(strlen(str) != g->dims[1] || 
                 strspn(str, validChars) != g->dims[1]) {
             free(g->board);
@@ -124,15 +124,15 @@ int parse_sfile(Game* g, FILE* f) {
     return OK;
 }
 
-// retrieves 5 lines from the given file stream
+// retrieves TILE_MAX_ROWs + 1 (6) lines from the given file stream
 // and saves it in the given array
-// if a newline is aquired returns special value, else returns an error code
+// if a newline is aquired returns UTIL, else returns standard error code
 int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
     char str[TILE_MAX_COL + 2];
     int i;
     for(i = 0; i < TILE_MAX_ROW; i++) {
         if(!fgets(str, TILE_MAX_COL + 2, f)) { // get line and check if EOF
-            if(i == 0) { // check if EOF at beginning
+            if(i == 0) { // check if EOF is expected
                 return E_EOF;
             }
             return E_TFILE_R;
@@ -143,7 +143,7 @@ int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
             return UTIL;
         }
 
-        char validChars[] = ",!";
+        char validChars[] = ",!"; // checks for invalid lines
         if(strlen(str) == TILE_MAX_ROW + 1 && 
                 strspn(str, validChars) == TILE_MAX_ROW) {
             str[TILE_MAX_COL] = '\0';
@@ -163,8 +163,7 @@ int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
     return OK;    
 }
 
-// loads tiles into game instance from given file 
-// @todo and prints them
+// loads tiles into given game instance from the given file stream
 int parse_tfile(Game* g, FILE* f) {
     g->tileCount = 0;
     g->tiles = (char**)malloc(sizeof(char*));
@@ -173,7 +172,7 @@ int parse_tfile(Game* g, FILE* f) {
     
     while(1) {
         int e = get_tile(f, output);
-        if(e == OK) {
+        if(e == OK) { // if valid tile
             strcpy(g->tiles[g->tileCount], output);
             g->tileCount += 1;
             
@@ -186,7 +185,7 @@ int parse_tfile(Game* g, FILE* f) {
                     (g->tileCount + 1));
             g->tiles[g->tileCount] = (char*)malloc(sizeof(char) * 
                     TILE_SIZE + 1);
-        } else if(e == E_EOF) {
+        } else if(e == E_EOF) { // valid EOF encountered
 #ifdef TEST
             fprintf(stdout, "got %d tiles\n", g->tileCount);
 #endif
@@ -200,7 +199,8 @@ int parse_tfile(Game* g, FILE* f) {
 }
 
 // takes a file pointer to a file and game struct
-// passes file to related function to check for correct formatting
+// passes file to related function (either for save files or tile files)
+// to check for correct formatting and loading of data
 // returns an error code
 int check_file(Game* g, char type, char* filename) {
     FILE* f = fopen(filename, "r"); 

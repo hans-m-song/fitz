@@ -1,6 +1,7 @@
 #ifndef FITZ_H
 #define FITZ_H
 
+#include <stdio.h>
 #define MAX_BUFFER 70
 
 // program error codes
@@ -25,8 +26,7 @@ typedef enum {
 typedef struct {
     int r;
     int c;
-    int theta;
-    char file[MAX_BUFFER];
+    int theta; // stores the number of rotations (0:0, 1:90, 2:180, 3:270)
 } Move;
 
 // instance of game

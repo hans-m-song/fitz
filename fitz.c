@@ -8,6 +8,7 @@
 #include "player.h"
 
 // frees all memory used by the given game instance
+// assumes both board and tiles have been allocated
 void end_game(Game* g) {
     free(g->board);
     clear_tiles(g->tiles, g->tileCount);
@@ -15,6 +16,7 @@ void end_game(Game* g) {
 
 // prints the 2D representation of the board in the given dimensions for the 
 // given 1D representation of the board to the given output
+// i.e. where i:row, j:col; board[row][col] -> tile[(i * width) + j]
 void print_board(char* board, int dims[2], FILE* f) {
     int i, j;
     for(i = 0; i < dims[0]; i++) {
@@ -26,12 +28,26 @@ void print_board(char* board, int dims[2], FILE* f) {
     fflush(f);
 }
 
+// checks every single position and rotation to see if there are any possible 
+// moves left
+// returns FAIL if no moves left, otherwise returns SUCCESS
 int win_condition(Game* g) {
-    // do an autoplayer move?
-    return 1;
+    int r, c, theta;
+    for(r = -2; r < g->dims[0] + 2; r++) { // for each row
+        for(c = -2; c < g->dims[1] + 2; c++) { // for each col
+            for(theta = 0; theta < 4; theta++) { // for each rotation
+                if(valid_move(g, r, c, theta * 90) == SUCCESS) {
+                    return SUCCESS;
+                }
+            }
+        }
+
+    }
+    return FAIL;
 }
 
-// takes the board and applys the tile with the given move
+// takes the board and applies the current tile with the current move
+// and the given character
 // assumes move is valid
 void do_move(Game* g, char pSymbol) {
 #ifdef TEST
@@ -55,12 +71,14 @@ void do_move(Game* g, char pSymbol) {
     }
 }
 
-// game runtime instance, plays the game in the given game instance
+// game runtime instance, plays the game with the given game instance
+// relies on a resetting counter of nextPlayer and nextTile to determine
+// which player to request a move from and which tile to play
 // returns an error code
 int play_game(Game* g) {
     char pSymbol[] = {'*', '#'};
 
-    while(1) { // TODO change this later while(!win_condition(g)) {
+    while(win_condition(g) != FAIL) { // check if there are any valid moves
         print_board(g->board, g->dims, stdout);
         Err e = FAIL;
         
@@ -69,6 +87,9 @@ int play_game(Game* g) {
             while(e == FAIL) {
                 fprintf(stdout, "Player %c] ", pSymbol[g->nextPlayer]);
                 e = h_move(g, &g->moves[g->nextPlayer]);
+                if(e == SAVE || e == SAVE_FAIL) {
+                    e = FAIL; // reset for reprompt
+                }
             }
         } else { // get autoplayer move
             fprintf(stdout, "Player %c => ", pSymbol[g->nextPlayer]);
@@ -82,32 +103,26 @@ int play_game(Game* g) {
                     g->moves[g->nextPlayer].theta * 90);
         }
          
-        
         if(e == E_EOF) { // if user quit
             return e;
         }
 
-        if(e == SAVE) { // if user requested save
-            break;
-        }
+        do_move(g, pSymbol[g->nextPlayer]);
 
-        if(e == SAVE_FAIL) {
-            err_msg(e);
-        } else {
-            do_move(g, pSymbol[g->nextPlayer]);
-
-            // increment player and tile count
-            g->nextPlayer += 1;
-            g->nextPlayer %= 2;
-            g->moveCount += 1;
-            g->nextTile += 1;
-            g->nextTile %= g->tileCount;
-        }
+        g->nextPlayer += 1; // increment player and tile count for next move
+        g->nextPlayer %= 2;
+        g->moveCount += 1;
+        g->nextTile += 1;
+        g->nextTile %= g->tileCount;
     }
+    // someone won
+    print_board(g->board, g->dims, stdout);
+    fprintf(stdout, "Player %c wins\n", pSymbol[(g->nextPlayer + 1) % 2]);
+
     return OK;
 }
 
-// intializes the game using the given game instance and invocation arguments
+// intializes the game using the given game instance and invocation args
 // returns an error code
 int init_game(Game* g, int argc, char** argv) {
     if(check_player(argv[2]) || check_player(argv[3])) {
@@ -117,12 +132,12 @@ int init_game(Game* g, int argc, char** argv) {
     g->playerType[1] = argv[3][0];
 
     Err e = OK;
-    if(argc == 5) {
-        e = check_file(g, 's', argv[4]); // load saved game
+    if(argc == 5) {  // load saved game
+        e = check_file(g, 's', argv[4]);
         if(e) {
             return e;
         }
-    } else {
+    } else { // initialize new game
         g->nextPlayer = 0;
         g->nextTile = 0;
         g->moveCount = 0;
@@ -159,20 +174,20 @@ int main(int argc, char** argv) {
         return e;
     }
     
-    if(argc == 2) {
+    if(argc == 2) { // print tiles and quit
         print_all_tiles(g.tiles, g.tileCount);
         clear_tiles(g.tiles, g.tileCount);
         return e;
     } 
     
-    e = init_game(&g, argc, argv);
+    e = init_game(&g, argc, argv); // intialize game instance
     if(e) {
         err_msg(e);
         clear_tiles(g.tiles, g.tileCount);
         return e;
     }
     
-    e = play_game(&g);
+    e = play_game(&g); // start game
     if(e) {
         err_msg(e);
     }

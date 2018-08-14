@@ -3,7 +3,7 @@
 #include <string.h>
 #include "tile.h"
 
-// frees memory used for tiles in the given game instance
+// frees memory used for the given number of tiles in the given tile array 
 void clear_tiles(char** tiles, int tileCount) {
     int i;
     for(i = 0; i < tileCount; i++) {
@@ -12,7 +12,8 @@ void clear_tiles(char** tiles, int tileCount) {
     free(tiles);
 }
 
-//prints the given 1D representation of a tile in 2D
+// prints the given 1D representation of a tile in 2D
+// where tile[row][col] -> tile[(row * width) + col]
 void print_tile(char* tile) {
     int i, j;
     for(i = 0; i < TILE_MAX_ROW; i++) {
@@ -24,8 +25,8 @@ void print_tile(char* tile) {
     fflush(stdout);
 }
 
-// prints the given 1D representation of the tiles and their rotations
-// side by side
+// takes a string representing a tile and it's 3 valid rotations and prints
+// them side by side
 void print_side_by_side(char* tiles) {
     int i, j, k;
     for(i = 0; i < TILE_MAX_ROW; i++) { // for each row
@@ -34,7 +35,7 @@ void print_side_by_side(char* tiles) {
                 int index = (j * TILE_SIZE) + (i * TILE_MAX_COL) + k;
                 fprintf(stdout, "%c", tiles[index]);
             }
-            if(j < 3) {
+            if(j < 3) { // ommit space on last tile
                 fprintf(stdout, " ");
             }
         }
@@ -43,7 +44,7 @@ void print_side_by_side(char* tiles) {
     fflush(stdout);
 }
 
-// uses the given tile and rotates it once 
+// rotates the given tile once and saves it to the given string 
 // recurses until tile is rotated by the given degree (1:90, 2:180, 3:270)
 void rotate(int deg, char* tile, char output[TILE_SIZE + 1]) {
     if(!deg) {
@@ -53,8 +54,8 @@ void rotate(int deg, char* tile, char output[TILE_SIZE + 1]) {
     
     memset(output, '\0', TILE_SIZE + 1);
     // for each row, rotate 90 degrees and put in corresponding column
-    // i:row, j:column where index of source (row_max * row) + column is 
-    // mapped to (j * column_max) + (row_max - i - 1)
+    // i:row, j:col where index of source (row_max * row) + col is 
+    // mapped to (col * col_max) + (row_max - row - 1)
     int i, j; 
     for(i = 0; i < TILE_MAX_ROW; i++) {
         for(j = 0; j < TILE_MAX_COL; j++) {
@@ -104,7 +105,7 @@ void print_all_tiles(char** tiles, int tileCount) {
         }
     }
 
-    int j;
+    int j; // deallocates memory used
     for(j = 0; j < tileCount; j++) {
         free(output[j]);
     }

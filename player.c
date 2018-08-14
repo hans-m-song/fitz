@@ -5,34 +5,48 @@
 #include "fitz.h"
 
 // checks if the given tile fits on the board at the given row, column
-// and rotation
-// returns 1 if valid, otherwise returns 0
+// and rotation (in degrees)
+// maps tile to coordinates relative to board starting from top left corner 
+// and checks for overhangs and empty space {r - 2, c - 2} until {r + 2, c + 2}
+// returns SUCCESS if valid, otherwise returns FAIL
 int valid_move(Game* g, int r, int c, int theta) {
-#ifdef TEST
-    fprintf(stdout, "checking move %d %d %d\n", r, c, theta);
+#ifdef VERBOSE
+    fprintf(stdout, "checking move %d %d %d: ", r, c, theta);
 #endif
 
-    if(r < -2 || r > g->dims[0] + 2 || c < -2 || c > g->dims[1] + 3 || 
-            theta % 90 != 0 || theta < 0 || theta > 270) {
+    if(r < -2 || r > g->dims[0] + 2 || c < -2 || c > g->dims[1] + 2 || 
+            theta < 0 || theta % 90 != 0 || theta > 270) { // check bounds
+#ifdef VERBOSE
+        printf("out of bounds\n");
+#endif
         return FAIL;
     }
 
     char tile[TILE_SIZE + 1];
-    rotate(theta / 90, g->tiles[g->nextTile], tile);
+    rotate(theta / 90, g->tiles[g->nextTile], tile); // rotate if neccessary
     
     int rowMin = r - 2; // find the corner of the tile with respect to board
     int colMin = c - 2;
 
-    int i, j, tileRow, tileCol;
+    int i, j, tileRow, tileCol; // overlay tile on board
     for(i = rowMin, tileRow = 0; tileRow < TILE_MAX_COL; i++, tileRow++) {
         for(j = colMin, tileCol = 0; tileCol < TILE_MAX_COL; j++, tileCol++) {
+            // check if tile hangs over edge of board
             if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
-                    (i < 0 || i > g->dims[0] || // check overhangs
+                    (i < 0 || i > g->dims[0] ||
                     j < 0 || j > g->dims[1])) {
+#ifdef VERBOSE
+                printf("overhangs %d %d\n", i, j);
+#endif
                 return FAIL;
             }
-            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && // check empty
-                    g->board[i * g->dims[1] + j] != '.') {
+
+            // check if space is empty
+            if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' &&
+                    g->board[i * g->dims[1] + j] != '.') { 
+#ifdef VERBOSE
+                printf("overlaps\n");
+#endif
                 return FAIL;
             }
         }
@@ -40,12 +54,13 @@ int valid_move(Game* g, int r, int c, int theta) {
     return SUCCESS;
 }
 
-// saves game instance to the given file
-// assumes file is valid
+// attempts to opens a file with the given filename
+// if successful, will save information of the given game and close the file
+// returns SUCCESS or SAVE_FAIL
 int save_game(char* fileName, Game* g) {
     FILE* f = fopen(fileName, "w");
     if(!f) {
-        return FAIL;
+        return SAVE_FAIL;
     }
 
     fprintf(f, "%d %d %d %d\n", g->nextTile, g->nextPlayer, g->dims[0], 
@@ -56,9 +71,9 @@ int save_game(char* fileName, Game* g) {
     return SUCCESS;
 }
 
-// type 1 autoplayer, takes the game instance and a move struct containing the
-// previous move, saves its next move to the struct
-// returns 1 if valid move found, otherwise returns 0
+// type 1 autoplayer, takes the game instance and a move struct containing 
+// in which it will save its next move to
+// returns SUCCESS if valid move found, otherwise returns FAIL
 int a1_move(Game* g, Move* m) {
     int r, rStart, c, cStart, theta;
     if(g->moveCount == 0) {
@@ -77,7 +92,7 @@ int a1_move(Game* g, Move* m) {
             if(valid_move(g, r, c, theta) == SUCCESS) {
                 m->r = r;
                 m->c = c;
-                m->theta = theta;
+                m->theta = theta * 90;
                 return SUCCESS;
             }
 
@@ -101,10 +116,15 @@ int a1_move(Game* g, Move* m) {
     return FAIL;
 }
 
-// type 2 autoplayer, same as a1Move TODO get tutor to check style
+// type 2 autoplayer, takes the game instance and a move struct containing 
+// in which it will save its next move to
+// first determines which direction to move (l -> r, t -> b or r -> l, b -> t)
+// then initializes start and end to the top left or bottom right appropriately
+// then it will move in the direction determined earlier
+// returns SUCCESS if valid move found, otherwise returns FAIL
 int a2_move(Game* g, Move* m) {
-    int r, c, theta;
-    int start[2], end[2], direction;
+    int r, rStart, c, cStart, theta;
+    int start[2], end[2], direction; // for where to start and where to end
     if(g->nextPlayer == 0) { // go left to right, downwards
         direction = 1;
         memcpy(start, (int[]){-2, -2}, sizeof(start));
@@ -114,12 +134,19 @@ int a2_move(Game* g, Move* m) {
         memcpy(start, (int[]){g->dims[0] + 2, g->dims[1] + 2}, sizeof(start));
         memcpy(end, (int[]){-2, -2}, sizeof(end));
     }
-    r = start[0];
-    c = start[1];
+    if(g->moveCount == 0) {
+        r = start[0];
+        c = start[1];
+    } else {
+        r = m->r;
+        c = m->c;
+    }
+    rStart = r;
+    cStart = c;
 
     while(1) {
         while(theta < 4) {
-            if(valid_move(g, r, c, theta) == SUCCESS) {
+            if(valid_move(g, r, c, theta * 90) == SUCCESS) {
                 m->r = r;
                 m->c = c;
                 m->theta = theta;
@@ -138,16 +165,16 @@ int a2_move(Game* g, Move* m) {
             r = start[0];
         }
 
-        if(r == start[0] && c == start[1]) {
+        if(r == rStart && c == cStart) {
             break;
         }
     }
 
-    printf("failed move\n");
     return FAIL;
 }
 
-// human move, retrieves and parses user input and saves it in the given move
+// human move, retrieves and parses user input and saves it in the given 
+// move struct
 // returns an error code describing the input
 int h_move(Game* g, Move* m) {
     char* str = (char*)malloc(sizeof(char) * MAX_BUFFER + 1);
