@@ -1,5 +1,5 @@
 CC = gcc
-BUILD := test
+BUILD := release
 flags.test := -DTEST -std=c99 -Wall -pedantic -g
 flags.verbose := -DTEST -DVERBOSE -std=c99 -Wall -pedantic -g
 flags.release := -std=c99 -Wall -pedantic 
