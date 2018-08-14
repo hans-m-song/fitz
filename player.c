@@ -93,9 +93,6 @@ int a1_move(Game* g, Move* m) {
                 m->r = r;
                 m->c = c;
                 m->theta = theta;
-#ifdef TEST
-            fprintf(stdout, "a1move success %d, %d, %d\n", r, c, theta);
-#endif
                 return SUCCESS;
             }
 
@@ -153,9 +150,6 @@ int a2_move(Game* g, Move* m) {
                 m->r = r;
                 m->c = c;
                 m->theta = theta;
-#ifdef TEST
-            fprintf(stdout, "a2move success %d, %d, %d\n", r, c, theta);
-#endif
                 return SUCCESS;
             }
             theta += 1;
