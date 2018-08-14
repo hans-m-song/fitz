@@ -115,8 +115,8 @@ int play_game(Game* g) {
         g->nextTile += 1;
         g->nextTile %= g->tileCount;
     }
-    // someone won
-    print_board(g->board, g->dims, stdout);
+
+    print_board(g->board, g->dims, stdout); // win condition is achieved
     fprintf(stdout, "Player %c wins\n", pSymbol[(g->nextPlayer + 1) % 2]);
 
     return OK;

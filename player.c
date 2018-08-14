@@ -33,8 +33,8 @@ int valid_move(Game* g, int r, int c, int theta) {
         for(j = colMin, tileCol = 0; tileCol < TILE_MAX_COL; j++, tileCol++) {
             // check if tile hangs over edge of board
             if(tile[tileRow * TILE_MAX_COL + tileCol] == '!' && 
-                    (i < 0 || i > g->dims[0] ||
-                    j < 0 || j > g->dims[1])) {
+                    (i < 0 || i > g->dims[0] - 1 ||
+                    j < 0 || j > g->dims[1] - 1)) {
 #ifdef VERBOSE
                 printf("overhangs %d %d\n", i, j);
 #endif
@@ -89,10 +89,13 @@ int a1_move(Game* g, Move* m) {
 
     while(theta < 4) {
         while(1) {
-            if(valid_move(g, r, c, theta) == SUCCESS) {
+            if(valid_move(g, r, c, theta * 90) == SUCCESS) {
                 m->r = r;
                 m->c = c;
-                m->theta = theta * 90;
+                m->theta = theta;
+#ifdef TEST
+            fprintf(stdout, "a1move success %d, %d, %d\n", r, c, theta);
+#endif
                 return SUCCESS;
             }
 
@@ -150,6 +153,9 @@ int a2_move(Game* g, Move* m) {
                 m->r = r;
                 m->c = c;
                 m->theta = theta;
+#ifdef TEST
+            fprintf(stdout, "a2move success %d, %d, %d\n", r, c, theta);
+#endif
                 return SUCCESS;
             }
             theta += 1;
