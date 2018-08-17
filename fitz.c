@@ -9,6 +9,7 @@
 
 // frees all memory used by the given game instance
 // assumes both board and tiles have been allocated
+// params: g - instance of current game instance
 void end_game(Game* g) {
     free(g->board);
     clear_tiles(g->tiles, g->tileCount);
@@ -17,6 +18,9 @@ void end_game(Game* g) {
 // prints the 2D representation of the board in the given dimensions for the 
 // given 1D representation of the board to the given output
 // i.e. where i:row, j:col; board[row][col] -> tile[(i * width) + j]
+// params: board - 1D representation of board
+//         dims - array storing the dimensions of the board
+//         f - filestream to print data to
 void print_board(char* board, int dims[2], FILE* f) {
     int i, j;
     for(i = 0; i < dims[0]; i++) {
@@ -30,7 +34,8 @@ void print_board(char* board, int dims[2], FILE* f) {
 
 // checks every single position and rotation to see if there are any possible 
 // moves left
-// returns FAIL if no moves left, otherwise returns SUCCESS
+// params: g - instance of current game instance
+// returns: FAIL if no moves left, otherwise returns SUCCESS
 int win_condition(Game* g) {
     int r, c, theta;
     for(r = -2; r < g->dims[0] + 2; r++) { // for each row
@@ -49,6 +54,8 @@ int win_condition(Game* g) {
 // takes the board and applies the current tile with the current move
 // and the given character
 // assumes move is valid
+// params: g - current game instance
+//         pSymbol - the symbol representation of the current player
 void do_move(Game* g, char pSymbol) {
 #ifdef TEST
     fprintf(stdout, "doing move %d %d %d\n", g->moves[g->nextPlayer].r, 
@@ -74,7 +81,8 @@ void do_move(Game* g, char pSymbol) {
 // game runtime instance, plays the game with the given game instance
 // relies on a resetting counter of nextPlayer and nextTile to determine
 // which player to request a move from and which tile to play
-// returns an error code
+// params: g - current game instance
+// returns: an error code
 int play_game(Game* g) {
     char pSymbol[] = {'*', '#'};
 
@@ -126,7 +134,10 @@ int play_game(Game* g) {
 }
 
 // intializes the game using the given game instance and invocation args
-// returns an error code
+// params: g - current instance of the game
+//         argc - number of invocation arguments
+//         argv - array containing the invocation arguments
+// returns: an error code
 int init_game(Game* g, int argc, char** argv) {
     if(check_player(argv[2]) || check_player(argv[3])) {
         return E_PLAYER;

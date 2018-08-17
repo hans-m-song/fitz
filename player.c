@@ -8,7 +8,11 @@
 // and rotation (in degrees)
 // maps tile to coordinates relative to board starting from top left corner 
 // and checks for overhangs and empty space {r - 2, c - 2} until {r + 2, c + 2}
-// returns SUCCESS if valid, otherwise returns FAIL
+// params: g - current instance of the game
+//         r - integer representing row
+//         c - integer representing column
+//         theta - integer representing rotation in degrees
+// returns: SUCCESS if valid, otherwise returns FAIL
 int valid_move(Game* g, int r, int c, int theta) {
 #ifdef VERBOSE
     fprintf(stdout, "checking move %d %d %d: ", r, c, theta);
@@ -56,7 +60,9 @@ int valid_move(Game* g, int r, int c, int theta) {
 
 // attempts to opens a file with the given filename
 // if successful, will save information of the given game and close the file
-// returns SUCCESS or SAVE_FAIL
+// params: filename - name of file to save to
+//         g - current instance of game
+// returns: SUCCESS or SAVE_FAIL if file was unable to be opened
 int save_game(char* fileName, Game* g) {
     FILE* f = fopen(fileName, "w");
     if(!f) {
@@ -73,7 +79,9 @@ int save_game(char* fileName, Game* g) {
 
 // type 1 autoplayer, takes the game instance and a move struct containing 
 // in which it will save its next move to
-// returns SUCCESS if valid move found, otherwise returns FAIL
+// params: g - current instance of game
+//         m - move struct to save next move to
+// returns: SUCCESS if valid move found, otherwise returns FAIL
 int a1_move(Game* g, Move* m) {
     int r, rStart, c, cStart, theta;
     if(g->moveCount == 0) {
@@ -121,7 +129,9 @@ int a1_move(Game* g, Move* m) {
 // first determines which direction to move (l -> r, t -> b or r -> l, b -> t)
 // then initializes start and end to the top left or bottom right appropriately
 // then it will move in the direction determined earlier
-// returns SUCCESS if valid move found, otherwise returns FAIL
+// params: g - current instance of game
+//         m - move struct to save next move to
+// returns: SUCCESS if valid move found, otherwise returns FAIL
 int a2_move(Game* g, Move* m) {
     int r, rStart, c, cStart, theta;
     int start[2], end[2], direction; // for where to start and where to end
@@ -175,7 +185,10 @@ int a2_move(Game* g, Move* m) {
 
 // human move, retrieves and parses user input and saves it in the given 
 // move struct
-// returns an error code describing the input
+// params: g - current instance of game
+//         m - move struct to save next move to
+// returns: E_EOF if eof was encountered, SAVE if save was requested 
+// and successful, SAVE_FAIL if save failed, SUCCESS if valid move requested
 int h_move(Game* g, Move* m) {
     char* str = (char*)malloc(sizeof(char) * MAX_BUFFER + 1);
     
@@ -205,8 +218,11 @@ int h_move(Game* g, Move* m) {
         fprintf(stdout, "hmove saving to: %s\n", fileName);
 #endif
 
-        if(save_game(fileName, g) == SUCCESS) {
+        e = save_game(fileName, g); 
+        if(e == SUCCESS) {
             e = SAVE;
+        } else {
+            e = SAVE_FAIL;
         }
     }
 

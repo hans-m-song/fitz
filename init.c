@@ -7,6 +7,7 @@
 
 // takes an integer representation of an error code
 // prints the corresponding error code to stderr
+// params: e - error code
 void err_msg(Err e) {
     char* str;
     switch(e) {
@@ -47,7 +48,9 @@ void err_msg(Err e) {
 
 // takes the game instance and a string containing the metadata
 // parses the string and stores it in the game instance
-// returns an error code
+// params: g - current instance of game file
+//         str - string containing metadat of game from save file
+// returns: S_FILE_R if invalid contents, otherwise OK
 int parse_sfile_metadata(Game* g, char* str) {
     int output, nextTile, nextPlayer, row, col; // parse details
     output = sscanf(str, "%d %d %d %d", 
@@ -71,7 +74,9 @@ int parse_sfile_metadata(Game* g, char* str) {
 }
 
 // loads save file data into game instance from given file
-// returns an error code
+// params: g - current instance of the game
+//         f - filestream to read from
+// returns: S_FILE_R if invalid contents, otherwise OK
 int parse_sfile(Game* g, FILE* f) {
     char* metaData = (char*)malloc(sizeof(char) * MAX_BUFFER);
     metaData = fgets(metaData, MAX_BUFFER, f); // load game details
@@ -126,7 +131,10 @@ int parse_sfile(Game* g, FILE* f) {
 
 // retrieves TILE_MAX_ROWs + 1 (6) lines from the given file stream
 // and saves it in the given array
-// if a newline is aquired returns UTIL, else returns standard error code
+// params: f - filestream to read from
+//         output - array to save tile to
+// returns: UTIL if a newline is found, E_EOF if eof found, E_TFILE_R if 
+// invalid line, else returns OK
 int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
     char str[TILE_MAX_COL + 2];
     int i;
@@ -164,6 +172,9 @@ int get_tile(FILE* f, char output[TILE_SIZE + 1]) {
 }
 
 // loads tiles into given game instance from the given file stream
+// params: g - current instance of the game
+//         f - filestream to read from
+// returns: E_TFILE_R if invalid contents, otherwise OK
 int parse_tfile(Game* g, FILE* f) {
     g->tileCount = 0;
     g->tiles = (char**)malloc(sizeof(char*));
@@ -201,7 +212,11 @@ int parse_tfile(Game* g, FILE* f) {
 // takes a file pointer to a file and game struct
 // passes file to related function (either for save files or tile files)
 // to check for correct formatting and loading of data
-// returns an error code
+// params: g - current instance of the game
+//         type - type of tile to parse ('s' for save, 't' for tile file)
+//         filename - name of tile to open
+// returns: E_TFILE_IO or E_SFILE_IO if file cannot be opened, 
+// E_TFILE_R or E_SFILE_R if invalid contents and OK otherwise
 int check_file(Game* g, char type, char* filename) {
     FILE* f = fopen(filename, "r"); 
     if(!f) {
@@ -233,7 +248,8 @@ int check_file(Game* g, char type, char* filename) {
 }
 
 // checks player type of given string
-// returns an error code
+// params: ptype - string containing the player type
+// returns: E_PLAYER if invalid player, OK otherwise
 int check_player(char* ptype) {
     char validChars[] = "12h";
     if(strlen(ptype) != 1 || strspn(ptype, validChars) != 1) {
@@ -248,7 +264,10 @@ int check_player(char* ptype) {
 }
 
 // checks dimensions of given strings and saves them to given game instance
-// returns an error code
+// params: g - current instance of the game
+//         row - string containing the row
+//         col - string containing the col
+// returns: E_DIIM if invalid dimensions, OK otherwise
 int check_dims(Game* g, char* row, char* col) {
     char* temp;
     long int x = strtol(row, &temp, 10);
