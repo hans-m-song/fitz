@@ -88,6 +88,9 @@ int play_game(Game* g) {
                 fprintf(stdout, "Player %c] ", pSymbol[g->nextPlayer]);
                 e = h_move(g, &g->moves[g->nextPlayer]);
                 if(e == SAVE || e == SAVE_FAIL) {
+                    if(e == SAVE_FAIL) {
+                        err_msg(e);
+                    }
                     e = FAIL; // reset for reprompt
                 }
             }

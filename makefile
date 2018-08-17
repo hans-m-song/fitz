@@ -2,7 +2,7 @@ CC = gcc
 BUILD := release
 flags.test := -DTEST -std=c99 -Wall -pedantic -g
 flags.verbose := -DTEST -DVERBOSE -std=c99 -Wall -pedantic -g
-flags.release := -std=c99 -Wall -pedantic 
+flags.release := -std=c99 -Wall -pedantic -g 
 FLAGS := ${flags.${BUILD}} 
 OBJ = init.o fitz.o tile.o player.o
 
