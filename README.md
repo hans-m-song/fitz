@@ -2,7 +2,9 @@
 A simple tile based game
 
 use `make` to compile
+
 use `make BUILD=test` to compile with debugging information
+
 use `make BUILD=verbose` to compile with LOTS of debugging information
 
 run with `./fitz tilefile [p1type p2type [height width | savegame]]`
